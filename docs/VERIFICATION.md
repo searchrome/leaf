@@ -1,0 +1,19 @@
+# Verification
+
+Environment: Apple Silicon Mac, Swift 6.3.3 / Xcode 26.6. Verification date: 2026-09-24.
+
+## Automated
+
+`swift test`: 33 tests passed, zero failures. Coverage includes source UTF-16 offsets, stale/out-of-order callbacks, pause/resume and completion races at the pure-state level, pagination coverage/reflow anchors, EPUB fixture import and malformed/path input, cloud chunk text preservation, transcript matching/invalid timestamps, speech/model/transcription request fields, safe HTTP authentication errors, Gemini PCM-to-WAV conversion decoded by AVAudioPlayer, WAV transcription format, MP3 preservation for other models, and stage-specific provider errors with redaction. Narrator tests also verify that failed, missing, or mismatched timing preserves playable audio and switches to clearly labeled estimated word positions with a notice, that matching timing preserves highlights, and that cancellation never falls back to playback. Estimated timings are checked to span words within the measured speech window, stay ordered, and cover silent audio across the full duration. Sentence timings are checked to merge word spans into sentence ranges, including unterminated trailing text. OpenRouter requests in tests use a local URLProtocol stub; they do not call paid services.
+
+`bash scripts/package.sh`: release app built and ad-hoc signed successfully, including the cloud-enabled implementation.
+
+## Native app smoke check
+
+Observed in the launched app: reading layout and selectable page text fit; Read aloud produced moving word highlights; Pause displayed Resume and resumed the same passage; narration turned from page 1 to page 2 automatically; changing text size while speaking reflowed pages while keeping the spoken word visible; narration continued into chapter 2; end-of-book stopped at 100%; manual chapter navigation during playback returned to idle on the destination chapter. These checks used the bundled two-chapter demo and macOS speech callbacks. They establish visual/lifecycle behavior, not measured audio/visual latency.
+
+## Remaining qualification
+
+The new settings were also checked in an isolated QA app to preserve the user's open book in the older process. Verified secure key field, disabled Save/Preview with no key, provider switch, a live public speech-catalog refresh, model selection updating the exact model ID, and missing-key handling opening Settings without sending book text. Gemini 3.1 / Zephyr and Whisper 1 were found in the public catalogs. No credential was entered.
+
+Live diagnosis with the saved Keychain key reproduced HTTP 400: Gemini requires PCM and rejected the previous MP3 request. The corrected Swift client generated a fixed short Gemini 3.1 / Zephyr sample: 149,804 WAV bytes, decoded by AVAudioPlayer as 3.12 seconds. Whisper returned word timestamps, but the sample transcript did not match the source exactly. The narrator now preserves generated audio on timing failure, switches to clearly labeled estimated word positions with a visible notice, and skips further transcription requests for the rest of the chapter; regression tests verify this path. The key was read in memory and never printed or saved to project files. This was a small paid live test, not a broad timestamp-accuracy or audible UI playback qualification. Keychain save was not re-tested. Additional manual checks: a diverse EPUB collection, rapid boundary races with real audio, window resizing, keyboard/VoiceOver, older macOS versions, Bluetooth latency, and signed/notarized distribution. Library positions are not persisted yet.
