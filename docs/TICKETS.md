@@ -11,7 +11,7 @@ Tickets are tracked locally because no external tracker was specified. Statuses 
 | LEAF-005 | P1 | Native reading window and controls | Implemented; initial visual QA passed | 002–004 |
 | LEAF-006 | P1 | Gemini/Zephyr word-alignment qualification | Adapter implemented; live quality measurements open | 001 |
 | LEAF-007 | P1 | Opt-in OpenRouter playback and cancellation | Implemented experimentally; live-account QA open | 006 |
-| LEAF-008 | P1 | Remember books, bookmarks, and reading position | Open | 004 |
+| LEAF-008 | P1 | Remember books, bookmarks, and reading position | Minimal position persistence implemented; full library open | 004 |
 | LEAF-009 | P2 | Rich EPUB rendering and navigation fidelity | Open | 004 |
 | LEAF-010 | P1 | macOS release qualification and distribution | In progress | 001–005 |
 | LEAF-011 | P1 | OpenRouter key, model, and voice settings | Implemented; Keychain live save QA open | 007 |
@@ -43,11 +43,11 @@ The implementation now uses OpenRouter TTS with two word-following modes: estima
 
 ## LEAF-007 — Optional cloud narration
 
-Implemented: selected model/voice requests, sentence chunks, bounded two-chunk lookahead prefetch, in-memory audio, friendly HTTP errors, player-clock highlighting, pause/resume, provider/book/navigation cancellation, and no silent local fallback. Remaining acceptance requires a live account: paused player cannot advance highlights; seek/book changes discard late results; chunk and chapter continuation work; model errors are actionable. Persistent cache and retry policy moved to 012. No paid requests were executed during implementation.
+Implemented: selected model/voice requests, sentence chunks, bounded two-chunk lookahead prefetch, in-memory audio, friendly HTTP errors, player-clock highlighting, pause/resume, provider/book/navigation cancellation, and no silent local fallback. Click-to-seek restarts narration at a clicked word or sentence, backward or forward, for cloud and Mac voices. Remaining acceptance requires a live account: paused player cannot advance highlights; seek/book changes discard late results; chunk and chapter continuation work; model errors are actionable. Persistent cache and retry policy moved to 012. No paid requests were executed during implementation.
 
 ## LEAF-008 — Library and persistence
 
-Persist imported books or security-scoped bookmarks, chapter ID plus UTF-16 location, voice, text size, and pace. Acceptance: relaunch restores the same word after reflow; missing books are recoverable; recent-books list supports removal. The prototype keeps a position only for the current session.
+Persist imported books or security-scoped bookmarks, chapter ID plus UTF-16 location, voice, text size, and pace. Acceptance: relaunch restores the same word after reflow; missing books are recoverable; recent-books list supports removal. Minimal implementation: the last book is stored as a security-scoped bookmark plus chapter and page (text size included), and relaunch continues there; the app also saves on close. Still open: word-level restore after reflow, recoverable missing books, a recent-books list, and pace persistence.
 
 ## LEAF-009 — EPUB fidelity
 

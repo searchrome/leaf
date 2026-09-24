@@ -4,6 +4,31 @@ import ReaderCore
 
 final class CloudNarratorTests: XCTestCase {
     @MainActor
+    func testUnsupportedVoiceIsRejectedBeforeAnyRequest() {
+        let qwen = SpeechModel(id: "qwen/qwen-audio-3.0-tts-flash", name: "Qwen Audio 3.0 TTS Flash", supportedVoices: ["longanhuan_v3.6", "loongjohn"])
+        let mismatch = SpeechSettings.unsupportedVoiceMessage(model: qwen.id, voice: "Zephyr", entry: qwen)
+        XCTAssertNotNil(mismatch)
+        XCTAssertTrue(mismatch!.contains("longanhuan_v3.6, loongjohn"))
+        XCTAssertNil(SpeechSettings.unsupportedVoiceMessage(model: qwen.id, voice: "loongjohn", entry: qwen))
+        XCTAssertNil(SpeechSettings.unsupportedVoiceMessage(model: qwen.id, voice: "anything", entry: SpeechModel(id: "x", name: "X", supportedVoices: nil)))
+    }
+    @MainActor
+    func testReadingPositionRoundTrip() {
+        let defaults = UserDefaults(suiteName: "test-reading-position")!
+        defer { defaults.removePersistentDomain(forName: "test-reading-position") }
+        XCTAssertNil(ReadingPositionStore.load(defaults: defaults))
+        let position = ReadingPosition(bookmark: Data([1, 2, 3]), chapterIndex: 2, pageIndex: 5)
+        ReadingPositionStore.save(position, defaults: defaults)
+        XCTAssertEqual(ReadingPositionStore.load(defaults: defaults), position)
+        let demoPosition = ReadingPosition(bookmark: nil, chapterIndex: 0, pageIndex: 1)
+        ReadingPositionStore.save(demoPosition, defaults: defaults)
+        XCTAssertEqual(ReadingPositionStore.load(defaults: defaults), demoPosition)
+        defaults.set(Data("broken".utf8), forKey: ReadingPositionStore.key)
+        XCTAssertNil(ReadingPositionStore.load(defaults: defaults))
+        defaults.set(Data(#"{"chapterIndex":-1,"pageIndex":0}"#.utf8), forKey: ReadingPositionStore.key)
+        XCTAssertNil(ReadingPositionStore.load(defaults: defaults))
+    }
+    @MainActor
     func testTimingFailureFallsBackToEstimatedWordsAndShowsNotice() async throws {
         for response in [
             (422, #"{"error":{"message":"Unsupported timing format"}}"#),

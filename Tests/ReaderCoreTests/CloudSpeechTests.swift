@@ -52,6 +52,7 @@ final class CloudSpeechTests: XCTestCase {
             append(sample >= 6_000 && sample < 42_000 ? 12_000 : 0)
         }
         let wave = try CloudAudio.waveFromGeminiPCM(pcm)
+        XCTAssertEqual(try XCTUnwrap(CloudAudio.envelope(wave)).duration, 2, accuracy: 0.001)
         let text = "Hello, wider world! Hello again."
         let timings = CloudAlignment.estimatedTimings(text, audio: wave, duration: 2)
         XCTAssertEqual(timings.count, 5)
@@ -68,6 +69,45 @@ final class CloudSpeechTests: XCTestCase {
         XCTAssertEqual(fallback[0].start, 0)
         XCTAssertEqual(fallback[1].end, 1, accuracy: 0.001)
         XCTAssertTrue(CloudAlignment.estimatedTimings("Hi", audio: wave, duration: 0).isEmpty)
+        // AVAudioPlayer under-reports header-less VBR MP3 (Kokoro); the decoded length wins.
+        let understated = CloudAlignment.estimatedTimings(text, audio: wave, duration: 1.2)
+        XCTAssertEqual(understated.last!.end, timings.last!.end, accuracy: 0.001)
+    }
+
+    func testJoinedMP3SegmentsLoseTheirLengthHeaders() {
+        // MPEG-2 layer III, 64 kbps, 24 kHz mono: 192-byte frames, Xing tag at byte 13.
+        func frame(_ fill: UInt8, xing: Bool = false) -> Data {
+            var bytes = [UInt8](repeating: fill, count: 192)
+            bytes[0...3] = [0xFF, 0xF3, 0x84, 0xC4]
+            if xing { bytes[13..<17] = ArraySlice("Xing".utf8) }
+            return Data(bytes)
+        }
+        let audio = [frame(0, xing: true), frame(1), frame(2), frame(0, xing: true), frame(3)].reduce(Data(), +)
+        XCTAssertEqual(CloudAudio.removingMP3LengthHeaders(audio), [frame(1), frame(2), frame(3)].reduce(Data(), +))
+        let plain = frame(1) + frame(2)
+        XCTAssertEqual(CloudAudio.removingMP3LengthHeaders(plain), plain)
+        let notMP3 = Data("not audio".utf8)
+        XCTAssertEqual(CloudAudio.removingMP3LengthHeaders(notMP3), notMP3)
+    }
+
+    func testEstimatedTimingsRejectTruncatedSpeech() throws {
+        let sampleRate = 24_000
+        func chunkedPCM(toneFrames: Int) throws -> Data {
+            var pcm = Data()
+            func append(_ sample: Int16) {
+                var littleEndian = sample.littleEndian
+                withUnsafeBytes(of: &littleEndian) { pcm.append(contentsOf: $0) }
+            }
+            let total = Int(2.3 * Double(sampleRate))
+            let toneStart = sampleRate, toneEnd = toneStart + toneFrames * Int(0.02 * Double(sampleRate))
+            for sample in 0..<total {
+                append(sample >= toneStart && sample < toneEnd ? 12_000 : 0)
+            }
+            return try CloudAudio.waveFromGeminiPCM(pcm)
+        }
+        let text = "Hello world where rivers quietly run"
+        XCTAssertTrue(CloudAlignment.estimatedTimings(text, audio: try chunkedPCM(toneFrames: 12), duration: 2.3).isEmpty)
+        XCTAssertEqual(CloudAlignment.estimatedTimings(text, audio: try chunkedPCM(toneFrames: 100), duration: 2.3).count, 6)
     }
 
     func testSentenceTimingsMergeWordsIntoSentenceSpans() throws {
@@ -97,6 +137,18 @@ final class CloudSpeechTests: XCTestCase {
         XCTAssertEqual(unterminated[0].range, NSRange(location: 0, length: "Hello world".utf16.count))
         XCTAssertEqual(unterminated[0].start, 0)
         XCTAssertEqual(unterminated[0].end, 1)
+    }
+
+    func testSeekStartSnapsToUnitStarts() {
+        let text = "Hello world. Hello again!"
+        let ns = text as NSString
+        XCTAssertEqual(CloudAlignment.seekStart(text, at: ns.range(of: "world.").location + 2, bySentence: false), ns.range(of: "world.").location)
+        XCTAssertEqual(CloudAlignment.seekStart(text, at: ns.range(of: "world.").location + 2, bySentence: true), 0)
+        XCTAssertEqual(CloudAlignment.seekStart(text, at: ns.range(of: "again!").location, bySentence: true), ns.range(of: "Hello", options: .backwards).location)
+        XCTAssertEqual(CloudAlignment.seekStart(text, at: 0, bySentence: false), 0)
+        XCTAssertEqual(CloudAlignment.seekStart(text, at: 99, bySentence: false), text.utf16.count)
+        XCTAssertEqual(CloudAlignment.seekStart(text, at: -3, bySentence: true), 0)
+        XCTAssertEqual(CloudAlignment.seekStart("", at: 0, bySentence: false), 0)
     }
 
     func testChunkingPreservesAllTextAndUTF16Ranges() {

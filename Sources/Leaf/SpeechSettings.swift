@@ -23,8 +23,14 @@ final class SpeechSettings: ObservableObject {
         let defaults = UserDefaults.standard
         provider = Provider(rawValue: defaults.string(forKey: "speechProvider") ?? "") ?? .mac
         let savedModel = defaults.string(forKey: "cloudModel") ?? SpeechModel.defaults[0].id
-        model = savedModel == "google/gemini-3.1-flash-tts-preview" ? SpeechModel.defaults[0].id : savedModel
-        voice = defaults.string(forKey: "cloudVoice") ?? "Zephyr"
+        let savedVoice = defaults.string(forKey: "cloudVoice") ?? "Zephyr"
+        if savedModel == "google/gemini-3.8-flash-lite-tts" || savedModel == "google/gemini-3.1-flash-tts-preview" {
+            model = SpeechModel.defaults[0].id
+            voice = SpeechModel.defaults[0].supportedVoices?.first ?? savedVoice
+        } else {
+            model = savedModel
+            voice = savedVoice
+        }
         timingModel = defaults.string(forKey: "timingModel") ?? "openai/whisper-1"
         wordHighlighting = defaults.object(forKey: "cloudWordHighlighting") as? Bool ?? true
         timingMode = CloudWordTiming(rawValue: defaults.string(forKey: "cloudTimingMode") ?? "") ?? .estimated
@@ -78,10 +84,19 @@ final class SpeechSettings: ObservableObject {
         let selectedModel = model.trimmingCharacters(in: .whitespacesAndNewlines)
         let selectedVoice = voice.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !selectedModel.isEmpty, !selectedVoice.isEmpty else { throw CloudSpeechError.message("Choose a speech model and enter a supported voice in Settings.") }
+        if let entry = models.first(where: { $0.id == selectedModel }),
+           let problem = Self.unsupportedVoiceMessage(model: selectedModel, voice: selectedVoice, entry: entry) {
+            throw CloudSpeechError.message(problem)
+        }
         let alignWords = wordHighlighting && !preview
         let selectedTimingModel = timingModel.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !alignWords || timingMode == .estimated || !selectedTimingModel.isEmpty else { throw CloudSpeechError.message("Enter a timing model, or select Fast word follow.") }
         return CloudConfiguration(key: try KeychainKey.read(), model: selectedModel, voice: selectedVoice, timingModel: selectedTimingModel, alignWords: alignWords, timingMode: timingMode, highlightGranularity: highlightGranularity)
+    }
+
+    static func unsupportedVoiceMessage(model: String, voice: String, entry: SpeechModel) -> String? {
+        guard let voices = entry.supportedVoices, !voices.isEmpty, !voices.contains(voice) else { return nil }
+        return "Voice \(voice) is not supported by \(model). Choose one of: \(voices.joined(separator: ", "))."
     }
 }
 

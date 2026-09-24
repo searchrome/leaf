@@ -1,3 +1,4 @@
+import AVFoundation
 import Foundation
 import NaturalLanguage
 
@@ -10,8 +11,10 @@ public struct SpeechModel: Decodable, Identifiable, Equatable {
         self.id = id; self.name = name; self.supportedVoices = supportedVoices
     }
     public static let defaults = [
+        SpeechModel(id: "hexgrad/kokoro-82m", name: "Kokoro 82M", supportedVoices: ["af_sarah", "af_alloy", "af_aoede", "af_bella", "af_heart", "af_jessica", "af_kore", "af_nicole", "af_nova", "af_river", "af_sky", "am_adam", "am_echo", "am_eric", "am_fenrir", "am_liam", "am_michael", "am_onyx", "am_puck", "am_santa", "bf_alice", "bf_emma", "bf_isabella", "bf_lily", "bm_daniel", "bm_fable", "bm_george", "bm_lewis", "ef_dora", "em_alex", "em_santa", "ff_siwis", "hf_alpha", "hf_beta", "hm_omega", "hm_psi", "if_sara", "im_nicola", "jf_alpha", "jf_gongitsune", "jf_nezumi", "jf_tebukuro", "jm_kumo", "pf_dora", "pm_alex", "pm_santa", "zf_xiaobei", "zf_xiaoni", "zf_xiaoxiao", "zf_xiaoyi", "zm_yunjian", "zm_yunxi", "zm_yunxia", "zm_yunyang"]),
         SpeechModel(id: "google/gemini-3.8-flash-lite-tts", name: "Gemini 3.8 Flash Lite TTS", supportedVoices: ["Zephyr", "Kore", "Puck", "Charon", "Fenrir", "Aoede"]),
-        SpeechModel(id: "google/gemini-3.1-flash-tts-preview", name: "Gemini 3.1 Flash TTS Preview", supportedVoices: ["Zephyr", "Kore", "Puck", "Charon", "Fenrir", "Aoede"])
+        SpeechModel(id: "google/gemini-3.1-flash-tts-preview", name: "Gemini 3.1 Flash TTS Preview", supportedVoices: ["Zephyr", "Kore", "Puck", "Charon", "Fenrir", "Aoede"]),
+        SpeechModel(id: "qwen/qwen-audio-3.0-tts-flash", name: "Qwen Audio 3.0 TTS Flash", supportedVoices: ["longanhuan_v3.6", "loongjohn"])
     ]
 }
 
@@ -73,6 +76,47 @@ enum CloudAudio {
         return wave
     }
 
+    /// Kokoro joins several MP3 segments, each opening with its own Xing/Info frame.
+    /// Apple trusts the first one, so the player's clock freezes at the first segment's
+    /// length while audio keeps playing. Dropping those metadata-only frames makes
+    /// macOS measure the real stream. Unparseable data is left untouched.
+    static func removingMP3LengthHeaders(_ mp3: Data) -> Data {
+        let bytes = [UInt8](mp3)
+        var offset = 0
+        if bytes.count > 10, bytes[0] == 0x49, bytes[1] == 0x44, bytes[2] == 0x33 { // ID3v2
+            offset = 10 + (Int(bytes[6]) << 21 | Int(bytes[7]) << 14 | Int(bytes[8]) << 7 | Int(bytes[9]))
+        }
+        var output = Data(bytes.prefix(offset))
+        var removed = false
+        while offset + 4 <= bytes.count {
+            let b1 = bytes[offset + 1], b2 = bytes[offset + 2], b3 = bytes[offset + 3]
+            let version = (b1 >> 3) & 3, layer = (b1 >> 1) & 3
+            let bitrateIndex = Int(b2 >> 4), rateIndex = Int((b2 >> 2) & 3)
+            guard bytes[offset] == 0xFF, b1 & 0xE0 == 0xE0, version != 1, layer == 1,
+                  bitrateIndex > 0, bitrateIndex < 15, rateIndex < 3 else { break }
+            let v1 = version == 3
+            let bitrate = (v1 ? [0, 32, 40, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320]
+                              : [0, 8, 16, 24, 32, 40, 48, 56, 64, 80, 96, 112, 128, 144, 160])[bitrateIndex] * 1000
+            let sampleRate = [44_100, 48_000, 32_000][rateIndex] / (v1 ? 1 : version == 2 ? 2 : 4)
+            let length = (v1 ? 144 : 72) * bitrate / sampleRate + Int((b2 >> 1) & 1)
+            guard offset + length <= bytes.count else { break }
+            let mono = b3 >> 6 == 3
+            let tagOffset = offset + 4 + (v1 ? (mono ? 17 : 32) : (mono ? 9 : 17))
+            func tag(at start: Int) -> String? {
+                start + 4 <= offset + length ? String(bytes: bytes[start..<start + 4], encoding: .ascii) : nil
+            }
+            if ["Xing", "Info"].contains(tag(at: tagOffset)) || tag(at: offset + 36) == "VBRI" {
+                removed = true
+            } else {
+                output.append(contentsOf: bytes[offset..<offset + length])
+            }
+            offset += length
+        }
+        guard removed else { return mp3 }
+        output.append(contentsOf: bytes[offset...])
+        return output
+    }
+
     /// Trim measured leading/trailing quiet in our known Gemini WAV layout.
     /// Other containers use the full decoded duration rather than assuming a sample format.
     static func speechBounds(_ audio: Data, duration: Double) -> (Double, Double) {
@@ -99,6 +143,73 @@ enum CloudAudio {
               let last = energy.lastIndex(where: { $0 > threshold }) else { return (0, duration) }
         return (max(0, Double(first) * 0.02 - 0.02), min(duration, Double(last + 1) * 0.02 + 0.02))
     }
+
+    /// 20 ms RMS envelope decoded from any supported container (MP3, WAV, …).
+    struct Envelope {
+        let energy: [Double]
+        let duration: Double
+        static let frame = 0.02
+    }
+
+    static func envelope(_ audio: Data) -> Envelope? {
+        guard !audio.isEmpty, audio.count <= 20_000_000 else { return nil }
+        let url = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent("leaf-\(UUID().uuidString).audio")
+        do {
+            try audio.write(to: url, options: .atomic)
+            defer { try? FileManager.default.removeItem(at: url) }
+            let file = try AVAudioFile(forReading: url)
+            let capacity = AVAudioFrameCount(max(1, file.processingFormat.sampleRate * Envelope.frame))
+            guard let buffer = AVAudioPCMBuffer(pcmFormat: file.processingFormat, frameCapacity: capacity),
+                  let channelData = buffer.floatChannelData else { return nil }
+            let channels = Int(buffer.format.channelCount)
+            var energy: [Double] = []
+            // Reading at the end of the file throws rather than returning zero frames.
+            while file.framePosition < file.length {
+                try file.read(into: buffer)
+                let frames = Int(buffer.frameLength)
+                if frames == 0 { break }
+                var sum = 0.0
+                for frame in 0..<frames {
+                    var mixed = 0.0
+                    for channel in 0..<channels { mixed += Double(channelData[channel][frame]) }
+                    mixed /= Double(channels)
+                    sum += mixed * mixed
+                }
+                energy.append((sum / Double(frames)).squareRoot())
+            }
+            guard !energy.isEmpty else { return nil }
+            return Envelope(energy: energy, duration: Double(file.length) / file.processingFormat.sampleRate)
+        } catch { return nil }
+    }
+
+    /// Measured speech window (start, end) and pauses of at least 0.1 s inside it,
+    /// decoded locally so estimates work for MP3 providers like Kokoro too.
+    static func speechWindow(_ audio: Data, duration: Double) -> (start: Double, end: Double, gaps: [(start: Double, end: Double)]) {
+        guard let env = envelope(audio) else {
+            let (start, end) = speechBounds(audio, duration: duration)
+            return (start, end, [])
+        }
+        // AVAudioPlayer estimates MP3 duration from the first frames; for VBR audio
+        // without a Xing header (Kokoro) that can be far too short, which would squeeze
+        // the estimates and race ahead of the voice. The decoded length is exact.
+        let duration = env.duration
+        let threshold = max(0.002, (env.energy.max() ?? 0) * 0.025)
+        guard let first = env.energy.firstIndex(where: { $0 > threshold }),
+              let last = env.energy.lastIndex(where: { $0 > threshold }) else { return (0, duration, []) }
+        var gaps: [(start: Double, end: Double)] = []
+        var index = first
+        while index <= last {
+            if env.energy[index] <= threshold {
+                let begin = index
+                while index <= last, env.energy[index] <= threshold { index += 1 }
+                let gap = (start: Double(begin) * Envelope.frame, end: Double(index) * Envelope.frame)
+                if gap.end - gap.start >= 0.1 { gaps.append(gap) }
+            } else { index += 1 }
+        }
+        return (max(0, Double(first) * Envelope.frame - Envelope.frame),
+                min(duration, Double(last + 1) * Envelope.frame + Envelope.frame),
+                gaps)
+    }
 }
 
 public enum CloudAlignment {
@@ -108,7 +219,8 @@ public enum CloudAlignment {
     }
 
     /// Deliberately approximate: no transcription or word-accuracy claim.
-    /// Each short audio chunk provides a fresh duration anchor; playback rate is handled by the player's clock.
+    /// Anchored to the decoded audio's measured speech window and pauses so MP3
+    /// providers with leading silence (Kokoro) align like WAV providers do.
     public static func estimatedTimings(_ text: String, audio: Data, duration: Double) -> [TimedWord] {
         guard duration.isFinite, duration > 0 else { return [] }
         let tokenizer = NLTokenizer(unit: .word)
@@ -132,12 +244,29 @@ public enum CloudAlignment {
             }
             weights.append((word, pause))
         }
-        let (start, end) = CloudAudio.speechBounds(audio, duration: duration)
-        let scale = (end - start) / weights.reduce(0) { $0 + $1.word + $1.pause }
-        var cursor = start
+        let window = CloudAudio.speechWindow(audio, duration: duration)
+        let span = window.end - window.start
+        let wordWeight = weights.reduce(0) { $0 + $1.word }
+        // The typical pace behind the weights is about 0.083 s per unit. Speech far
+        // shorter than that means the provider returned truncated audio; estimates
+        // over it would race ahead of the voice, so no word timings are offered.
+        guard span >= 0.3 * wordWeight * 0.083 else { return [] }
+        let pauseWeight = weights.reduce(0) { $0 + $1.pause }
+        let wordScale: Double
+        let pauseScale: Double
+        if window.gaps.isEmpty || pauseWeight == 0 {
+            let scale = span / weights.reduce(0) { $0 + $1.word + $1.pause }
+            wordScale = scale
+            pauseScale = scale
+        } else {
+            let gapTotal = window.gaps.reduce(0) { $0 + ($1.end - $1.start) }
+            pauseScale = min(gapTotal, span * 0.7) / pauseWeight
+            wordScale = max(0, span - min(gapTotal, span * 0.7)) / wordWeight
+        }
+        var cursor = window.start
         return zip(ranges, weights).map { range, weight in
-            let word = TimedWord(range: range, start: cursor, end: min(end, cursor + weight.word * scale))
-            cursor += (weight.word + weight.pause) * scale
+            let word = TimedWord(range: range, start: cursor, end: min(window.end, cursor + weight.word * wordScale))
+            cursor += weight.word * wordScale + weight.pause * pauseScale
             return word
         }
     }
@@ -153,6 +282,28 @@ public enum CloudAlignment {
             return true
         }
         return ranges
+    }
+
+    public static func wordRanges(_ text: String) -> [NSRange] {
+        let tokenizer = NLTokenizer(unit: .word)
+        tokenizer.string = text
+        var ranges: [NSRange] = []
+        tokenizer.enumerateTokens(in: text.startIndex..<text.endIndex) { range, _ in
+            ranges.append(NSRange(range, in: text))
+            return true
+        }
+        return ranges
+    }
+
+    /// Snap a clicked offset to the start of the unit the reader would follow next.
+    public static func seekStart(_ text: String, at offset: Int, bySentence: Bool) -> Int {
+        let length = text.utf16.count
+        guard offset >= 0, offset < length else { return max(0, min(offset, length)) }
+        let ranges = bySentence ? sentenceRanges(text) : wordRanges(text)
+        if let unit = ranges.first(where: { $0.location <= offset && offset < NSMaxRange($0) }) {
+            return unit.location
+        }
+        return offset
     }
 
     public static func sentenceTimings(text: String, words: [TimedWord]) -> [TimedWord] {
@@ -295,7 +446,7 @@ public struct OpenRouterClient {
         let usesPCM = model.hasPrefix("google/gemini-")
         let data = try await post("audio/speech", body: ["model": model, "input": text, "voice": voice, "response_format": usesPCM ? "pcm" : "mp3"], key: key, operation: "speech generation (\(model), voice \(voice))", privateValues: [text])
         guard !data.isEmpty, data.count <= 20_000_000 else { throw CloudSpeechError.message("The voice provider returned empty or oversized audio.") }
-        return usesPCM ? try CloudAudio.waveFromGeminiPCM(data) : data
+        return usesPCM ? try CloudAudio.waveFromGeminiPCM(data) : CloudAudio.removingMP3LengthHeaders(data)
     }
 
     public func timings(audio: Data, model: String, key: String) async throws -> [TranscriptWord] {

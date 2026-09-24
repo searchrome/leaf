@@ -48,7 +48,9 @@ struct ReaderView: View {
                     let width = min(640.0, geo.size.width - 100)
                     let height = max(150.0, geo.size.height - 76)
                     VStack(spacing: 0) {
-                        PageText(text: reader.pageText, fontSize: reader.fontSize, highlight: reader.localHighlight)
+                        PageText(text: reader.pageText, fontSize: reader.fontSize, highlight: reader.localHighlight) { local in
+                            reader.seek(pageLocal: local)
+                        }
                             .frame(width: width, height: height)
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -185,9 +187,36 @@ struct PageText: NSViewRepresentable {
     let text: String
     let fontSize: CGFloat
     let highlight: NSRange?
+    let onSeek: (Int) -> Void
+
+    final class SeekTextView: NSTextView {
+        var onSeek: ((Int) -> Void)?
+        private var downPoint: NSPoint?
+
+        override func mouseDown(with event: NSEvent) {
+            downPoint = convert(event.locationInWindow, from: nil)
+            super.mouseDown(with: event)
+        }
+
+        override func mouseUp(with event: NSEvent) {
+            defer { downPoint = nil }
+            let upPoint = convert(event.locationInWindow, from: nil)
+            let dragged = downPoint.map { abs($0.x - upPoint.x) > 3 || abs($0.y - upPoint.y) > 3 } ?? true
+            if !dragged {
+                var fraction = CGFloat(0)
+                if let layoutManager, let container = textContainer {
+                    var index = layoutManager.characterIndex(for: upPoint, in: container, fractionOfDistanceBetweenInsertionPoints: &fraction)
+                    let length = (string as NSString).length
+                    if index != NSNotFound, index >= length { index = max(0, length - 1) }
+                    if index != NSNotFound, index >= 0 { onSeek?(index) }
+                }
+            }
+            super.mouseUp(with: event)
+        }
+    }
 
     func makeNSView(context: Context) -> NSTextView {
-        let view = NSTextView()
+        let view = SeekTextView()
         view.isEditable = false
         view.isSelectable = true
         view.drawsBackground = false
@@ -198,10 +227,12 @@ struct PageText: NSViewRepresentable {
         view.textContainer?.widthTracksTextView = true
         view.textContainer?.heightTracksTextView = true
         view.setAccessibilityLabel("Book page")
+        view.onSeek = onSeek
         return view
     }
 
     func updateNSView(_ view: NSTextView, context: Context) {
+        if let seekView = view as? SeekTextView { seekView.onSeek = onSeek }
         if view.string != text || view.font?.pointSize != fontSize {
             view.textStorage?.setAttributedString(Pagination.attributed(text, fontSize: fontSize))
         }

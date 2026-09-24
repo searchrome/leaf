@@ -4,6 +4,30 @@ import ReaderCore
 import SwiftUI
 import UniformTypeIdentifiers
 
+struct ReadingPosition: Codable, Equatable {
+    var bookmark: Data?
+    var chapterIndex: Int
+    var pageIndex: Int
+}
+
+@MainActor
+enum ReadingPositionStore {
+    static let key = "readingPosition"
+
+    static func save(_ position: ReadingPosition, defaults: UserDefaults) {
+        if let data = try? JSONEncoder().encode(position) {
+            defaults.set(data, forKey: key)
+        }
+    }
+
+    static func load(defaults: UserDefaults) -> ReadingPosition? {
+        guard let data = defaults.data(forKey: key),
+              let position = try? JSONDecoder().decode(ReadingPosition.self, from: data),
+              position.chapterIndex >= 0, position.pageIndex >= 0 else { return nil }
+        return position
+    }
+}
+
 @MainActor
 final class ReaderModel: NSObject, ObservableObject, AVSpeechSynthesizerDelegate {
     @Published var book = Demo.book
@@ -12,7 +36,7 @@ final class ReaderModel: NSObject, ObservableObject, AVSpeechSynthesizerDelegate
     @Published var pages = [NSRange(location: 0, length: 0)]
     @Published var highlight: NSRange?
     @Published var state: ReadingSession.State = .idle
-    @Published var fontSize: CGFloat = 21
+    @Published var fontSize: CGFloat { didSet { UserDefaults.standard.set(Double(fontSize), forKey: "readerFontSize") } }
     @Published var rate: Float = 1
     @Published var voiceID = ""
     @Published var error: String?
@@ -33,11 +57,22 @@ final class ReaderModel: NSObject, ObservableObject, AVSpeechSynthesizerDelegate
     private var deferredCompletion = false
     private var viewport = CGSize(width: 580, height: 570)
     private var importTask: Task<Void, Never>?
+    private var bookURL: URL?
+    private var pendingRestore: ReadingPosition?
+    private var terminationObserver: NSObjectProtocol?
 
     override init() {
+        let storedSize = UserDefaults.standard.double(forKey: "readerFontSize")
+        fontSize = storedSize > 0 ? CGFloat(storedSize) : 21
         super.init()
         synthesizer.delegate = self
         repaginate()
+        restoreSavedPosition()
+        terminationObserver = NotificationCenter.default.addObserver(forName: NSApplication.willTerminateNotification, object: nil, queue: nil) { [weak self] _ in
+            MainActor.assumeIsolated {
+                self?.savePosition()
+            }
+        }
     }
 
     var chapter: Chapter { book.chapters[chapterIndex] }
@@ -107,6 +142,7 @@ final class ReaderModel: NSObject, ObservableObject, AVSpeechSynthesizerDelegate
         pageIndex = 0
         pages = [NSRange(location: 0, length: 0)]
         repaginate()
+        savePosition()
     }
 
     func turnPage(_ direction: Int) {
@@ -115,9 +151,56 @@ final class ReaderModel: NSObject, ObservableObject, AVSpeechSynthesizerDelegate
         if next < 0, chapterIndex > 0 {
             selectChapter(chapterIndex - 1)
             pageIndex = pages.count - 1
+            savePosition()
         } else if next >= pages.count, chapterIndex < book.chapters.count - 1 {
             selectChapter(chapterIndex + 1)
-        } else { pageIndex = min(max(next, 0), pages.count - 1) }
+        } else {
+            pageIndex = min(max(next, 0), pages.count - 1)
+            savePosition()
+        }
+    }
+
+    /// Play from a clicked page location, snapped to the followed unit.
+    func seek(pageLocal local: Int) {
+        guard !isImporting, local >= 0, local < pageText.utf16.count else { return }
+        let absolute = pageRange.location + local
+        let target = CloudAlignment.seekStart(chapter.text, at: absolute, bySentence: speechSettings.highlightGranularity == .sentence)
+        pageIndex = ReadingSession.page(containing: target, in: pages)
+        speak(from: target)
+    }
+
+    func savePosition() {
+        guard !isImporting else { return }
+        let bookmark = bookURL.flatMap { try? $0.bookmarkData(options: [], includingResourceValuesForKeys: nil, relativeTo: nil) }
+        ReadingPositionStore.save(
+            ReadingPosition(bookmark: bookmark, chapterIndex: chapterIndex, pageIndex: pageIndex),
+            defaults: .standard)
+    }
+
+    private func restoreSavedPosition() {
+        guard let saved = ReadingPositionStore.load(defaults: .standard) else { return }
+        pendingRestore = saved
+        var url: URL?
+        if let data = saved.bookmark {
+            var isStale = false
+            url = try? URL(resolvingBookmarkData: data, options: [], relativeTo: nil, bookmarkDataIsStale: &isStale)
+        }
+        if let url, FileManager.default.fileExists(atPath: url.path) {
+            load(url)
+        } else if saved.bookmark == nil {
+            applyRestoredPosition()
+        }
+    }
+
+    private func applyRestoredPosition() {
+        guard let restore = pendingRestore else { return }
+        pendingRestore = nil
+        chapterIndex = min(restore.chapterIndex, book.chapters.count - 1)
+        pageIndex = 0
+        pages = [NSRange(location: 0, length: 0)]
+        repaginate()
+        pageIndex = min(restore.pageIndex, pages.count - 1)
+        savePosition()
     }
 
     func updateVoice() {
@@ -162,7 +245,11 @@ final class ReaderModel: NSObject, ObservableObject, AVSpeechSynthesizerDelegate
                                 guard let self, self.activeGeneration == token else { return }
                                 if let range, let absolute = self.session.word(range, generation: token) {
                                     self.highlight = self.speechSettings.wordHighlighting ? absolute : nil
-                                    self.pageIndex = ReadingSession.page(containing: absolute.location, in: self.pages)
+                                    let next = ReadingSession.page(containing: absolute.location, in: self.pages)
+                                    if next != self.pageIndex {
+                                        self.pageIndex = next
+                                        self.savePosition()
+                                    }
                                 } else if range == nil, self.state == .speaking { self.highlight = nil }
                             },
                             onFinish: { [weak self] in
@@ -208,7 +295,11 @@ final class ReaderModel: NSObject, ObservableObject, AVSpeechSynthesizerDelegate
             }
             guard let absolute = self.session.word(spoken, generation: token) else { return }
             self.highlight = absolute
-            self.pageIndex = ReadingSession.page(containing: absolute.location, in: self.pages)
+            let next = ReadingSession.page(containing: absolute.location, in: self.pages)
+            if next != self.pageIndex {
+                self.pageIndex = next
+                self.savePosition()
+            }
         }
     }
 
@@ -229,11 +320,13 @@ final class ReaderModel: NSObject, ObservableObject, AVSpeechSynthesizerDelegate
             pageIndex = 0
             pages = [NSRange(location: 0, length: 0)]
             repaginate()
+            savePosition()
             speak(from: 0)
         } else {
             activeUtterance = nil
             activeGeneration = nil
             state = .finished
+            savePosition()
         }
     }
 
@@ -255,10 +348,12 @@ final class ReaderModel: NSObject, ObservableObject, AVSpeechSynthesizerDelegate
                 let imported = try await Task.detached(priority: .userInitiated) { try EPUBImporter.load(url) }.value
                 guard !Task.isCancelled else { return }
                 book = imported
+                bookURL = url
                 chapterIndex = 0
                 pageIndex = 0
                 pages = [NSRange(location: 0, length: 0)]
                 repaginate()
+                applyRestoredPosition()
                 isImporting = false
             } catch {
                 guard !Task.isCancelled else { return }

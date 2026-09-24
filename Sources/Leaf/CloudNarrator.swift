@@ -192,6 +192,9 @@ final class CloudNarrator: NSObject, AVAudioPlayerDelegate {
         if configuration.alignWords {
             if configuration.timingMode == .estimated {
                 words = CloudAlignment.estimatedTimings(chunk.text, audio: audio, duration: probe.duration)
+                if words.isEmpty {
+                    warning = "The voice returned much shorter audio than this passage needs, so word following is off for it."
+                }
             } else {
                 do {
                     let transcript = try await client.timings(audio: audio, model: configuration.timingModel, key: configuration.key)
