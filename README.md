@@ -17,7 +17,13 @@ bash scripts/package.sh
 open dist/Leaf.app
 ```
 
-Use **Open a book** or Command-O for an unencrypted EPUB. Press **Read aloud** to start from the current page. Space pauses/resumes; arrow keys navigate. Click any word or sentence on the page — during playback or while paused — and the voice rewinds or jumps ahead to it and keeps reading. A two-chapter sample is included to try narration immediately.
+Use **Open a book** or Command-O for an unencrypted EPUB. Press **Read aloud** to start from the current page. Space pauses/resumes; arrow keys navigate. Click any word or sentence on the page — during playback or while paused — and the voice rewinds or jumps ahead to it and keeps reading. Select text to bookmark it or look it up; saved selections remain highlighted and appear in the sidebar. A two-chapter sample is included to try narration immediately.
+
+## Bookmarks and lookup
+
+Drag to select a word, phrase, or passage. The contextual menu and the controls beside the chapter title offer **Bookmark** and **Look Up**. Bookmarks retain the exact selected text, persist per book, and take you back to the matching page when selected from the sidebar.
+
+Look Up uses the free dictionaries enabled in macOS Dictionary first, without sending the selection anywhere. If there is no local definition, Leaf uses the saved OpenRouter key to ask `deepseek/deepseek-v4.1-flash` for a short, contextual definition. That fallback sends the selected text and a small surrounding passage to OpenRouter and may use account credits.
 
 The app remembers the last open book and the page you left: relaunch continues on that chapter and page.
 

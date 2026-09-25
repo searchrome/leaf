@@ -464,6 +464,41 @@ public struct OpenRouterClient {
         return words
     }
 
+    /// Looks up a term when the reader has no local dictionary definition available.
+    /// The response is deliberately plain text so it can be shown directly in the reader.
+    public func dictionaryDefinition(term: String, context: String, model: String, key: String) async throws -> String {
+        let trimmedTerm = term.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedTerm.isEmpty else { throw CloudSpeechError.message("Select a word or phrase to look it up.") }
+        let data = try await post("chat/completions", body: [
+            "model": model,
+            "temperature": 0.2,
+            "max_tokens": 220,
+            "messages": [
+                [
+                    "role": "system",
+                    "content": "You are a concise dictionary for a book reader. Give the selected term's part of speech and one to three brief definitions that fit the supplied context. Use plain text, avoid preambles, and do not quote the context."
+                ],
+                [
+                    "role": "user",
+                    "content": "Selected term: \(trimmedTerm)\n\nBook context:\n\(context)"
+                ]
+            ]
+        ], key: key, operation: "dictionary lookup (\(model))", privateValues: [trimmedTerm, context])
+        struct Completion: Decodable {
+            struct Choice: Decodable {
+                struct Message: Decodable { let content: String? }
+                let message: Message
+            }
+            let choices: [Choice]
+        }
+        guard let definition = try? JSONDecoder().decode(Completion.self, from: data).choices.first?.message.content?
+            .trimmingCharacters(in: .whitespacesAndNewlines),
+              !definition.isEmpty else {
+            throw CloudSpeechError.message("OpenRouter returned no definition. Try again with a shorter selection.")
+        }
+        return String(definition.prefix(2_000))
+    }
+
     private func post(_ path: String, body: [String: Any], key: String, operation: String, privateValues: [String]) async throws -> Data {
         guard !key.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             throw CloudSpeechError.message("Add your OpenRouter API key in Reading settings first.")
@@ -488,11 +523,16 @@ public struct OpenRouterClient {
             switch http.statusCode {
             case 401: message = "OpenRouter rejected the API key. Check the key in Settings."
             case 403: message = "OpenRouter denied this request. Check the key permissions and your account's model and privacy restrictions."
-            case 402: message = "Your OpenRouter account needs credits to generate speech."
+            case 402:
+                message = operation.hasPrefix("dictionary lookup")
+                    ? "Your OpenRouter account needs credits to look up this selection."
+                    : "Your OpenRouter account needs credits to generate speech."
             case 400, 404, 422:
                 message = operation.hasPrefix("word timing")
                     ? "Choose a timing model that supports word timestamps, or turn off word highlighting in Settings."
-                    : "Refresh models in Settings and choose a supported model and voice."
+                    : operation.hasPrefix("dictionary lookup")
+                        ? "Try again with a shorter selection, or check that this model is available to your account."
+                        : "Refresh models in Settings and choose a supported model and voice."
             case 429: message = "OpenRouter is rate limiting requests. Please try again shortly."
             default: message = "OpenRouter request failed (HTTP \(http.statusCode)). Please try again."
             }

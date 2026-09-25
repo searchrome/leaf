@@ -94,6 +94,10 @@ final class SpeechSettings: ObservableObject {
         return CloudConfiguration(key: try KeychainKey.read(), model: selectedModel, voice: selectedVoice, timingModel: selectedTimingModel, alignWords: alignWords, timingMode: timingMode, highlightGranularity: highlightGranularity)
     }
 
+    func openRouterKey() throws -> String {
+        try KeychainKey.read()
+    }
+
     static func unsupportedVoiceMessage(model: String, voice: String, entry: SpeechModel) -> String? {
         guard let voices = entry.supportedVoices, !voices.isEmpty, !voices.contains(voice) else { return nil }
         return "Voice \(voice) is not supported by \(model). Choose one of: \(voices.joined(separator: ", "))."

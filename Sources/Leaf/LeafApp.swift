@@ -21,6 +21,9 @@ struct LeafApp: App {
                 Button(reader.isReading ? "Pause" : "Read aloud", action: reader.toggleReading).keyboardShortcut(" ", modifiers: [])
                 Button("Next page") { reader.turnPage(1) }.keyboardShortcut(.rightArrow, modifiers: [])
                 Button("Previous page") { reader.turnPage(-1) }.keyboardShortcut(.leftArrow, modifiers: [])
+                Divider()
+                Button("Bookmark Selected Text", action: reader.bookmarkSelectedText).disabled(!reader.hasTextSelection)
+                Button("Look Up Selected Text", action: reader.lookUpSelectedText).disabled(!reader.hasTextSelection)
             }
         }
     }
@@ -33,6 +36,7 @@ private let paper = Color(red: 0.98, green: 0.97, blue: 0.94)
 struct ReaderView: View {
     @ObservedObject var reader: ReaderModel
     @ObservedObject var speech: SpeechSettings
+    @State private var bookmarksExpanded = false
 
     init(reader: ReaderModel) {
         self.reader = reader
@@ -48,9 +52,21 @@ struct ReaderView: View {
                     let width = min(640.0, geo.size.width - 100)
                     let height = max(150.0, geo.size.height - 76)
                     VStack(spacing: 0) {
-                        PageText(text: reader.pageText, fontSize: reader.fontSize, highlight: reader.localHighlight) { local in
-                            reader.seek(pageLocal: local)
-                        }
+                        PageText(
+                            text: reader.pageText,
+                            fontSize: reader.fontSize,
+                            highlight: reader.localHighlight,
+                            bookmarks: reader.bookmarkLocalRanges,
+                            selectedBookmark: reader.selectedBookmarkLocalRange,
+                            selectedBookmarkID: reader.selectedBookmark?.id,
+                            onSeek: { local in reader.seek(pageLocal: local) },
+                            onSelection: { range in reader.selectionChanged(pageLocal: range) },
+                            onBookmarkHit: { local in reader.selectBookmark(atPageLocal: local) },
+                            onRemoveBookmark: {
+                                if let bookmark = reader.selectedBookmark { reader.removeBookmark(bookmark) }
+                            },
+                            onBookmark: reader.bookmarkSelectedText,
+                            onLookup: reader.lookUpSelectedText)
                             .frame(width: width, height: height)
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -66,6 +82,9 @@ struct ReaderView: View {
         .alert("Leaf needs your attention", isPresented: Binding(get: { reader.error != nil && !reader.showSettings }, set: { if !$0 { reader.error = nil } })) {
             Button("OK") { reader.error = nil }
         } message: { Text(reader.error ?? "") }
+        .sheet(item: $reader.lookupResult) { result in
+            DictionaryLookupView(result: result)
+        }
         .overlay {
             if reader.isImporting {
                 ZStack {
@@ -94,9 +113,49 @@ struct ReaderView: View {
             Text(reader.book.title).font(.system(size: 17, weight: .medium, design: .serif)).fixedSize(horizontal: false, vertical: true).padding(.top, 19)
             Text(reader.book.author).font(.system(size: 12)).foregroundStyle(.secondary).padding(.top, 5)
             Divider().padding(.vertical, 24)
-            Text("CONTENTS").font(.system(size: 10, weight: .semibold)).tracking(1.6).foregroundStyle(.secondary)
             ScrollView {
-                VStack(spacing: 5) {
+                VStack(alignment: .leading, spacing: 5) {
+                    Button { bookmarksExpanded.toggle() } label: {
+                        HStack(spacing: 7) {
+                            Image(systemName: bookmarksExpanded ? "chevron.down" : "chevron.right")
+                            Text("BOOKMARKS (\(reader.bookmarks.count))").tracking(1.2)
+                            Spacer(minLength: 0)
+                        }
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundStyle(.secondary)
+                        .padding(.vertical, 8)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityValue(bookmarksExpanded ? "Expanded" : "Collapsed")
+                    if bookmarksExpanded {
+                        if reader.bookmarks.isEmpty {
+                            Text("Select text to save your first bookmark.")
+                                .font(.caption).foregroundStyle(.secondary).padding(.vertical, 8)
+                        }
+                        ForEach(reader.bookmarks) { bookmark in
+                            HStack(alignment: .top, spacing: 5) {
+                                Button { reader.openBookmark(bookmark) } label: {
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        Text("CHAPTER \(bookmark.chapterIndex + 1)")
+                                            .font(.system(size: 9, weight: .semibold)).tracking(0.8).foregroundStyle(.secondary)
+                                        Text(bookmark.quote.replacingOccurrences(of: "\n", with: " "))
+                                            .font(.system(size: 11, design: .serif)).lineLimit(3).multilineTextAlignment(.leading)
+                                    }
+                                    .padding(9).frame(maxWidth: .infinity, alignment: .leading)
+                                    .background(Color(red: 0.91, green: 0.88, blue: 0.67).opacity(0.35), in: RoundedRectangle(cornerRadius: 7))
+                                }.buttonStyle(.plain)
+                                Button { reader.removeBookmark(bookmark) } label: {
+                                    Image(systemName: "xmark").font(.system(size: 9, weight: .semibold)).frame(width: 20, height: 24)
+                                }
+                                .buttonStyle(.plain).foregroundStyle(.secondary)
+                                .help("Remove bookmark")
+                            }
+                        }
+                    }
+                    Divider().padding(.vertical, 12)
+                    Text("CONTENTS").font(.system(size: 10, weight: .semibold)).tracking(1.6).foregroundStyle(.secondary)
                     ForEach(Array(reader.book.chapters.enumerated()), id: \.element.id) { index, chapter in
                         Button { reader.selectChapter(index) } label: {
                             HStack(alignment: .firstTextBaseline, spacing: 10) {
@@ -126,6 +185,19 @@ struct ReaderView: View {
                 Text(reader.chapter.title).font(.system(size: 14, weight: .medium, design: .serif)).lineLimit(1)
             }
             Spacer()
+            if reader.selectedBookmark == nil && reader.hasTextSelection {
+                HStack(spacing: 8) {
+                    Button(action: reader.bookmarkSelectedText) {
+                        Label("Bookmark", systemImage: "bookmark")
+                    }
+                    .buttonStyle(.bordered).controlSize(.small)
+                    Button(action: reader.lookUpSelectedText) {
+                        Label("Look Up", systemImage: "text.magnifyingglass")
+                    }
+                    .buttonStyle(.bordered).controlSize(.small).disabled(reader.isLookingUp)
+                    if reader.isLookingUp { ProgressView().controlSize(.small) }
+                }
+            }
             Button { reader.showSettings.toggle() } label: {
                 Image(systemName: "textformat.size").font(.system(size: 17)).frame(width: 38, height: 34)
             }.buttonStyle(.plain).help("Reading settings").accessibilityLabel("Reading settings")
@@ -183,19 +255,133 @@ struct ReaderView: View {
 
 }
 
+private struct DictionaryLookupView: View {
+    let result: DictionaryLookupResult
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack(alignment: .firstTextBaseline) {
+                Text(result.term).font(.system(size: 24, weight: .medium, design: .serif))
+                Spacer()
+                Button("Done") { dismiss() }.keyboardShortcut(.defaultAction)
+            }
+            Text(result.source.rawValue.uppercased())
+                .font(.caption.weight(.semibold)).tracking(1.1).foregroundStyle(.secondary)
+            ScrollView {
+                Text(result.definition)
+                    .font(.system(size: 15, design: .serif))
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .textSelection(.enabled)
+            }
+        }
+        .padding(26)
+        .frame(width: 480, height: 330)
+        .background(paper)
+    }
+}
+
 struct PageText: NSViewRepresentable {
     let text: String
     let fontSize: CGFloat
     let highlight: NSRange?
+    let bookmarks: [NSRange]
+    let selectedBookmark: NSRange?
+    let selectedBookmarkID: UUID?
     let onSeek: (Int) -> Void
+    let onSelection: (NSRange) -> Void
+    let onBookmarkHit: (Int) -> Bool
+    let onRemoveBookmark: () -> Void
+    let onBookmark: () -> Void
+    let onLookup: () -> Void
+
+    final class Coordinator: NSObject, NSTextViewDelegate {
+        var parent: PageText
+        var updatingView = false
+
+        init(_ parent: PageText) { self.parent = parent }
+
+        func textViewDidChangeSelection(_ notification: Notification) {
+            guard !updatingView else { return }
+            guard let view = notification.object as? NSTextView else { return }
+            parent.onSelection(view.selectedRange())
+        }
+    }
+
+    func makeCoordinator() -> Coordinator { Coordinator(self) }
 
     final class SeekTextView: NSTextView {
         var onSeek: ((Int) -> Void)?
+        var onBookmarkHit: ((Int) -> Bool)?
+        var onBookmark: (() -> Void)?
+        var onLookup: (() -> Void)?
+        var onRemoveBookmark: (() -> Void)?
+        var removalRange: NSRange?
+        private(set) lazy var removeButton: NSButton = {
+            let button = NSButton(title: "×", target: self, action: #selector(removeSelectedBookmark))
+            button.isBordered = false
+            button.wantsLayer = true
+            button.layer?.backgroundColor = NSColor.selectedTextBackgroundColor.cgColor
+            button.layer?.cornerRadius = 6
+            button.contentTintColor = .selectedTextColor
+            button.font = .systemFont(ofSize: 18, weight: .semibold)
+            button.toolTip = "Remove this bookmark"
+            button.setAccessibilityLabel("Remove selected bookmark")
+            addSubview(button)
+            return button
+        }()
+
+        @objc private func removeSelectedBookmark() { onRemoveBookmark?() }
+
+        func positionRemoveButton() {
+            guard let range = removalRange, range.length > 0,
+                  NSMaxRange(range) <= (string as NSString).length,
+                  let layoutManager, let container = textContainer else {
+                removeButton.isHidden = true
+                return
+            }
+            layoutManager.ensureLayout(for: container)
+            let glyph = layoutManager.glyphIndexForCharacter(at: NSMaxRange(range) - 1)
+            let rect = layoutManager.boundingRect(forGlyphRange: NSRange(location: glyph, length: 1), in: container)
+            removeButton.frame = NSRect(
+                x: min(max(0, rect.maxX + textContainerOrigin.x + 4), max(0, bounds.width - 26)),
+                y: min(max(0, rect.midY + textContainerOrigin.y - 13), max(0, bounds.height - 26)),
+                width: 26, height: 26)
+            removeButton.isHidden = false
+        }
+
+        override func layout() {
+            super.layout()
+            positionRemoveButton()
+        }
+        var displayedBookmarkID: UUID?
+        var bookmarkRanges: [NSRange] = []
         private var downPoint: NSPoint?
 
         override func mouseDown(with event: NSEvent) {
-            downPoint = convert(event.locationInWindow, from: nil)
+            let point = convert(event.locationInWindow, from: nil)
+            if event.clickCount == 1, !event.modifierFlags.contains(.shift),
+               let index = characterAtPoint(point),
+               let range = bookmarkRanges.first(where: { NSLocationInRange(index, $0) }),
+               onBookmarkHit?(index) == true {
+                window?.makeFirstResponder(self)
+                setSelectedRange(range)
+                downPoint = nil
+                return
+            }
+            downPoint = point
             super.mouseDown(with: event)
+        }
+
+        /// Hit the glyph itself, not the nearest insertion position in blank space.
+        func characterAtPoint(_ point: NSPoint) -> Int? {
+            guard let layoutManager, let container = textContainer, !string.isEmpty else { return nil }
+            layoutManager.ensureLayout(for: container)
+            let local = NSPoint(x: point.x - textContainerOrigin.x, y: point.y - textContainerOrigin.y)
+            let glyph = layoutManager.glyphIndex(for: local, in: container)
+            guard glyph < layoutManager.numberOfGlyphs,
+                  layoutManager.boundingRect(forGlyphRange: NSRange(location: glyph, length: 1), in: container).contains(local) else { return nil }
+            return layoutManager.characterIndexForGlyph(at: glyph)
         }
 
         override func mouseUp(with event: NSEvent) {
@@ -208,11 +394,33 @@ struct PageText: NSViewRepresentable {
                     var index = layoutManager.characterIndex(for: upPoint, in: container, fractionOfDistanceBetweenInsertionPoints: &fraction)
                     let length = (string as NSString).length
                     if index != NSNotFound, index >= length { index = max(0, length - 1) }
-                    if index != NSNotFound, index >= 0 { onSeek?(index) }
+                    if index != NSNotFound, index >= 0 {
+                        if onBookmarkHit?(index) == true {
+                            super.mouseUp(with: event)
+                            return
+                        }
+                        onSeek?(index)
+                    }
                 }
             }
             super.mouseUp(with: event)
         }
+
+        override func menu(for event: NSEvent) -> NSMenu? {
+            let menu = super.menu(for: event) ?? NSMenu()
+            guard selectedRange().length > 0 else { return menu }
+            let bookmark = NSMenuItem(title: "Bookmark Selected Text", action: #selector(bookmarkSelection), keyEquivalent: "")
+            bookmark.target = self
+            let lookup = NSMenuItem(title: "Look Up Selected Text", action: #selector(lookUpSelection), keyEquivalent: "")
+            lookup.target = self
+            menu.insertItem(.separator(), at: 0)
+            menu.insertItem(lookup, at: 0)
+            menu.insertItem(bookmark, at: 0)
+            return menu
+        }
+
+        @objc private func bookmarkSelection() { onBookmark?() }
+        @objc private func lookUpSelection() { onLookup?() }
     }
 
     func makeNSView(context: Context) -> NSTextView {
@@ -228,18 +436,42 @@ struct PageText: NSViewRepresentable {
         view.textContainer?.heightTracksTextView = true
         view.setAccessibilityLabel("Book page")
         view.onSeek = onSeek
+        view.onBookmarkHit = onBookmarkHit
+        view.bookmarkRanges = bookmarks
+        view.onBookmark = onBookmark
+        view.onLookup = onLookup
+        view.delegate = context.coordinator
         return view
     }
 
     func updateNSView(_ view: NSTextView, context: Context) {
-        if let seekView = view as? SeekTextView { seekView.onSeek = onSeek }
+        context.coordinator.updatingView = true
+        defer { context.coordinator.updatingView = false }
+        context.coordinator.parent = self
+        if let seekView = view as? SeekTextView {
+            seekView.onSeek = onSeek
+            seekView.onBookmarkHit = onBookmarkHit
+            seekView.bookmarkRanges = bookmarks
+            seekView.onBookmark = onBookmark
+            seekView.onLookup = onLookup
+            seekView.onRemoveBookmark = onRemoveBookmark
+            seekView.removalRange = selectedBookmark
+        }
         if view.string != text || view.font?.pointSize != fontSize {
             view.textStorage?.setAttributedString(Pagination.attributed(text, fontSize: fontSize))
         }
+        if let seekView = view as? SeekTextView, seekView.displayedBookmarkID != selectedBookmarkID {
+            seekView.displayedBookmarkID = selectedBookmarkID
+            if let selectedBookmark { view.setSelectedRange(selectedBookmark) }
+        }
         let entire = NSRange(location: 0, length: (text as NSString).length)
         view.layoutManager?.removeTemporaryAttribute(.backgroundColor, forCharacterRange: entire)
+        for bookmark in bookmarks where bookmark.location >= 0 && NSMaxRange(bookmark) <= entire.length {
+            view.layoutManager?.addTemporaryAttribute(.backgroundColor, value: NSColor(calibratedRed: 0.94, green: 0.88, blue: 0.55, alpha: 0.55), forCharacterRange: bookmark)
+        }
         if let highlight, NSMaxRange(highlight) <= entire.length {
             view.layoutManager?.addTemporaryAttribute(.backgroundColor, value: NSColor(calibratedRed: 0.77, green: 0.85, blue: 0.62, alpha: 0.9), forCharacterRange: highlight)
         }
+        (view as? SeekTextView)?.positionRemoveButton()
     }
 }

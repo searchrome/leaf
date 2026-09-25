@@ -304,6 +304,27 @@ final class OpenRouterClientTests: XCTestCase {
         XCTAssertEqual(models.first?.supportedVoices, ["Zephyr"])
     }
 
+    func testDictionaryLookupUsesConfiguredModelAndReturnsPlainText() async throws {
+        StubHTTP.handler = { request in
+            XCTAssertEqual(request.url?.path, "/api/v1/chat/completions")
+            XCTAssertEqual(request.value(forHTTPHeaderField: "Authorization"), "Bearer test-placeholder")
+            let body = try self.body(request)
+            XCTAssertEqual(body["model"] as? String, "deepseek/deepseek-v4.1-flash")
+            XCTAssertEqual(body["temperature"] as? Double, 0.2)
+            XCTAssertNil(body["key"])
+            let messages = body["messages"] as? [[String: String]]
+            XCTAssertTrue(messages?[1]["content"]?.contains("Selected term: liminal") == true)
+            XCTAssertTrue(messages?[1]["content"]?.contains("a liminal afternoon") == true)
+            return (200, Data(#"{"choices":[{"message":{"content":"liminal (adjective)\nAt a threshold or transitional stage."}}]}"#.utf8))
+        }
+        let definition = try await client().dictionaryDefinition(
+            term: "liminal",
+            context: "a liminal afternoon",
+            model: "deepseek/deepseek-v4.1-flash",
+            key: "test-placeholder")
+        XCTAssertEqual(definition, "liminal (adjective)\nAt a threshold or transitional stage.")
+    }
+
     private func body(_ request: URLRequest) throws -> [String: Any] {
         var data = request.httpBody ?? Data()
         if data.isEmpty, let stream = request.httpBodyStream {

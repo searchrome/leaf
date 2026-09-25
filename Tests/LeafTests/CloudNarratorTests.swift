@@ -28,6 +28,23 @@ final class CloudNarratorTests: XCTestCase {
         defaults.set(Data(#"{"chapterIndex":-1,"pageIndex":0}"#.utf8), forKey: ReadingPositionStore.key)
         XCTAssertNil(ReadingPositionStore.load(defaults: defaults))
     }
+
+    @MainActor
+    func testTextBookmarksPersistPerBookAndDiscardStaleQuotes() {
+        let defaults = UserDefaults(suiteName: "test-text-bookmarks")!
+        defer { defaults.removePersistentDomain(forName: "test-text-bookmarks") }
+        let chapter = Chapter(id: "one", title: "One", text: "The old oak stood beside the lane.")
+        let book = Book(title: "Test", author: "Reader", chapters: [chapter])
+        let range = (chapter.text as NSString).range(of: "old oak")
+        let bookmark = TextBookmark(chapter: chapter, chapterIndex: 0, range: range, quote: "old oak")
+
+        TextBookmarkStore.save([bookmark], bookID: "test-book", defaults: defaults)
+        XCTAssertEqual(TextBookmarkStore.load(bookID: "test-book", book: book, defaults: defaults), [bookmark])
+
+        let editedBook = Book(title: "Test", author: "Reader", chapters: [Chapter(id: "one", title: "One", text: "The young oak stood beside the lane.")])
+        XCTAssertEqual(TextBookmarkStore.load(bookID: "test-book", book: editedBook, defaults: defaults), [])
+        XCTAssertEqual(TextBookmarkStore.load(bookID: "another-book", book: book, defaults: defaults), [])
+    }
     @MainActor
     func testTimingFailureFallsBackToEstimatedWordsAndShowsNotice() async throws {
         for response in [

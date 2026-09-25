@@ -45,6 +45,11 @@ final class ReaderModel: NSObject, ObservableObject, AVSpeechSynthesizerDelegate
     @Published var showSettings = false
     @Published var preparingCloud = false
     @Published var isPreviewing = false
+    @Published private(set) var bookmarks: [TextBookmark] = []
+    @Published private(set) var selectedText = ""
+    @Published private(set) var selectedBookmark: TextBookmark?
+    @Published var lookupResult: DictionaryLookupResult?
+    @Published private(set) var isLookingUp = false
     let speechSettings = SpeechSettings()
     private let cloud = CloudNarrator()
     private var usingCloud = false
@@ -60,6 +65,8 @@ final class ReaderModel: NSObject, ObservableObject, AVSpeechSynthesizerDelegate
     private var bookURL: URL?
     private var pendingRestore: ReadingPosition?
     private var terminationObserver: NSObjectProtocol?
+    private var selectedRange: NSRange?
+    private var lookupTask: Task<Void, Never>?
 
     override init() {
         let storedSize = UserDefaults.standard.double(forKey: "readerFontSize")
@@ -67,6 +74,7 @@ final class ReaderModel: NSObject, ObservableObject, AVSpeechSynthesizerDelegate
         super.init()
         synthesizer.delegate = self
         repaginate()
+        loadBookmarks()
         restoreSavedPosition()
         terminationObserver = NotificationCenter.default.addObserver(forName: NSApplication.willTerminateNotification, object: nil, queue: nil) { [weak self] _ in
             MainActor.assumeIsolated {
@@ -86,6 +94,21 @@ final class ReaderModel: NSObject, ObservableObject, AVSpeechSynthesizerDelegate
         guard intersection.length > 0 else { return nil }
         return NSRange(location: intersection.location - pageRange.location, length: intersection.length)
     }
+    var bookmarkLocalRanges: [NSRange] {
+        bookmarks.compactMap { bookmark in
+            guard bookmark.chapterIndex == chapterIndex else { return nil }
+            let intersection = NSIntersectionRange(bookmark.range, pageRange)
+            guard intersection.length > 0 else { return nil }
+            return NSRange(location: intersection.location - pageRange.location, length: intersection.length)
+        }
+    }
+    var selectedBookmarkLocalRange: NSRange? {
+        guard let bookmark = selectedBookmark, bookmark.chapterIndex == chapterIndex else { return nil }
+        let intersection = NSIntersectionRange(bookmark.range, pageRange)
+        guard intersection.length > 0 else { return nil }
+        return NSRange(location: intersection.location - pageRange.location, length: intersection.length)
+    }
+    var hasTextSelection: Bool { (selectedRange?.length ?? 0) > 0 && !selectedText.isEmpty }
 
     func resize(_ size: CGSize) {
         let next = CGSize(width: max(200, size.width), height: max(150, size.height))
@@ -141,12 +164,14 @@ final class ReaderModel: NSObject, ObservableObject, AVSpeechSynthesizerDelegate
         chapterIndex = index
         pageIndex = 0
         pages = [NSRange(location: 0, length: 0)]
+        clearSelection()
         repaginate()
         savePosition()
     }
 
     func turnPage(_ direction: Int) {
         stop()
+        clearSelection()
         let next = pageIndex + direction
         if next < 0, chapterIndex > 0 {
             selectChapter(chapterIndex - 1)
@@ -167,6 +192,154 @@ final class ReaderModel: NSObject, ObservableObject, AVSpeechSynthesizerDelegate
         let target = CloudAlignment.seekStart(chapter.text, at: absolute, bySentence: speechSettings.highlightGranularity == .sentence)
         pageIndex = ReadingSession.page(containing: target, in: pages)
         speak(from: target)
+    }
+
+    func selectionChanged(pageLocal range: NSRange) {
+        guard range.location != NSNotFound, range.location >= 0, range.length > 0,
+              range.location <= pageRange.length, range.length <= pageRange.length - range.location else {
+            clearSelection()
+            return
+        }
+        let absolute = NSRange(location: pageRange.location + range.location, length: range.length)
+        if let bookmark = selectedBookmark {
+            let visibleBookmark = NSIntersectionRange(bookmark.range, pageRange)
+            if bookmark.chapterIndex != chapterIndex || absolute != visibleBookmark { selectedBookmark = nil }
+        }
+        let quote = (chapter.text as NSString).substring(with: absolute)
+        guard !quote.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            clearSelection()
+            return
+        }
+        selectedRange = absolute
+        selectedText = quote
+    }
+
+    /// Select a bookmark when the reader clicks anywhere in its saved text.
+    @discardableResult
+    func selectBookmark(atPageLocal location: Int) -> Bool {
+        let absolute = pageRange.location + location
+        guard let bookmark = bookmarks.first(where: {
+            $0.chapterIndex == chapterIndex && absolute >= $0.location && absolute < NSMaxRange($0.range)
+        }) else {
+            selectedBookmark = nil
+            return false
+        }
+        selectedBookmark = bookmark
+        selectedRange = bookmark.range
+        selectedText = bookmark.quote
+        return true
+    }
+
+    func bookmarkSelectedText() {
+        guard let range = selectedRange, hasTextSelection else {
+            error = "Select some book text before adding a bookmark."
+            return
+        }
+        guard !bookmarks.contains(where: { $0.chapterIndex == chapterIndex && $0.range == range }) else { return }
+        bookmarks.append(TextBookmark(chapter: chapter, chapterIndex: chapterIndex, range: range, quote: selectedText))
+        bookmarks.sort { $0.createdAt > $1.createdAt }
+        saveBookmarks()
+    }
+
+    func removeBookmark(_ bookmark: TextBookmark) {
+        bookmarks.removeAll { $0.id == bookmark.id }
+        if selectedBookmark?.id == bookmark.id { clearSelection() }
+        saveBookmarks()
+    }
+
+    func openBookmark(_ bookmark: TextBookmark) {
+        guard bookmark.isValid(in: book) else {
+            removeBookmark(bookmark)
+            return
+        }
+        stop()
+        chapterIndex = bookmark.chapterIndex
+        pageIndex = 0
+        pages = [NSRange(location: 0, length: 0)]
+        clearSelection()
+        repaginate()
+        pageIndex = ReadingSession.page(containing: bookmark.location, in: pages)
+        selectedBookmark = bookmark
+        selectedRange = bookmark.range
+        selectedText = bookmark.quote
+        savePosition()
+    }
+
+    func lookUpSelectedText() {
+        let term = selectedText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !term.isEmpty else {
+            error = "Select a word or phrase before looking it up."
+            return
+        }
+        lookupTask?.cancel()
+        if let definition = LocalDictionary.definition(for: term) {
+            lookupTaskID = nil
+            isLookingUp = false
+            lookupResult = DictionaryLookupResult(term: term, definition: definition, source: .local)
+            return
+        }
+        let context = lookupContext(for: selectedRange ?? NSRange(location: 0, length: 0))
+        let request = UUID()
+        do {
+            let key = try speechSettings.openRouterKey()
+            isLookingUp = true
+            lookupTaskID = request
+            lookupTask = Task { [weak self] in
+                do {
+                    let definition = try await OpenRouterClient().dictionaryDefinition(
+                        term: term,
+                        context: context,
+                        model: "deepseek/deepseek-v4.1-flash",
+                        key: key)
+                    guard !Task.isCancelled, let self, self.lookupTaskID == request else { return }
+                    self.isLookingUp = false
+                    self.lookupResult = DictionaryLookupResult(term: term, definition: definition, source: .ai)
+                } catch is CancellationError {
+                    guard let self, self.lookupTaskID == request else { return }
+                    self.isLookingUp = false
+                } catch {
+                    guard let self, self.lookupTaskID == request else { return }
+                    self.isLookingUp = false
+                    self.lookupResult = DictionaryLookupResult(
+                        term: term,
+                        definition: "Leaf could not find a local definition, and the online lookup failed. \(error.localizedDescription)",
+                        source: .unavailable)
+                }
+            }
+        } catch {
+            lookupResult = DictionaryLookupResult(
+                term: term,
+                definition: "Leaf could not find a local definition. Save an OpenRouter API key in Reading settings to use DeepSeek for this lookup.",
+                source: .unavailable)
+        }
+    }
+
+    private var lookupTaskID: UUID?
+
+    private func lookupContext(for selection: NSRange) -> String {
+        let text = chapter.text as NSString
+        let start = max(0, selection.location - 360)
+        let end = min(text.length, NSMaxRange(selection) + 360)
+        guard end >= start else { return selectedText }
+        return text.substring(with: NSRange(location: start, length: end - start))
+    }
+
+    private func clearSelection() {
+        selectedRange = nil
+        selectedText = ""
+        selectedBookmark = nil
+    }
+
+    private var bookmarkBookID: String {
+        bookURL?.standardizedFileURL.absoluteString ?? "local.leaf.reader.demo"
+    }
+
+    private func loadBookmarks() {
+        bookmarks = TextBookmarkStore.load(bookID: bookmarkBookID, book: book)
+    }
+
+    private func saveBookmarks() {
+        TextBookmarkStore.save(bookmarks, bookID: bookmarkBookID)
     }
 
     func savePosition() {
@@ -352,6 +525,8 @@ final class ReaderModel: NSObject, ObservableObject, AVSpeechSynthesizerDelegate
                 chapterIndex = 0
                 pageIndex = 0
                 pages = [NSRange(location: 0, length: 0)]
+                clearSelection()
+                loadBookmarks()
                 repaginate()
                 applyRestoredPosition()
                 isImporting = false

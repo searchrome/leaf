@@ -7,7 +7,11 @@ let package = Package(
     products: [.executable(name: "Leaf", targets: ["Leaf"])],
     targets: [
         .target(name: "ReaderCore"),
-        .executableTarget(name: "Leaf", dependencies: ["ReaderCore"]),
+        .executableTarget(
+            name: "Leaf",
+            dependencies: ["ReaderCore"],
+            linkerSettings: [.linkedFramework("CoreServices")]
+        ),
         .testTarget(name: "ReaderCoreTests", dependencies: ["ReaderCore"]),
         .testTarget(name: "LeafTests", dependencies: ["Leaf", "ReaderCore"])
     ]

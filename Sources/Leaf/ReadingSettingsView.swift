@@ -117,7 +117,7 @@ struct ReadingSettingsView: View {
                     .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                 }
             }
-            Text("When you play a cloud voice, book text and generated audio are sent to OpenRouter and its providers. Usage is billed to your OpenRouter account.")
+            Text("Cloud narration sends book text and generated audio to OpenRouter and its providers. If macOS Dictionary has no definition, Look Up sends only the selected text and nearby book context to DeepSeek through OpenRouter. Usage is billed to your OpenRouter account.")
                 .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             HStack {
                 Button(reader.isPreviewing ? "Stop preview" : "Preview voice") { reader.previewCloudVoice() }.disabled(!speech.hasKey)
