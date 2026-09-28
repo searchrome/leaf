@@ -21,6 +21,11 @@ struct LeafApp: App {
                 Button(reader.isReading ? "Pause" : "Read aloud", action: reader.toggleReading).keyboardShortcut(" ", modifiers: [])
                 Button("Next page") { reader.turnPage(1) }.keyboardShortcut(.rightArrow, modifiers: [])
                 Button("Previous page") { reader.turnPage(-1) }.keyboardShortcut(.leftArrow, modifiers: [])
+                Button(reader.isListeningView ? "Exit listening view" : "Open listening view") {
+                    reader.toggleListeningView()
+                }
+                .keyboardShortcut(KeyEquivalent("\u{F708}"), modifiers: [])
+                .disabled(!reader.isListeningView && !reader.canOpenListeningView)
                 Divider()
                 Button("Bookmark Selected Text", action: reader.bookmarkSelectedText).disabled(!reader.hasTextSelection)
                 Button("Look Up Selected Text", action: reader.lookUpSelectedText).disabled(!reader.hasTextSelection)
@@ -37,6 +42,7 @@ struct ReaderView: View {
     @ObservedObject var reader: ReaderModel
     @ObservedObject var speech: SpeechSettings
     @State private var bookmarksExpanded = false
+    @State private var listeningViewEnteredFullscreen = false
 
     init(reader: ReaderModel) {
         self.reader = reader
@@ -92,6 +98,26 @@ struct ReaderView: View {
                     ProgressView("Opening your book…").controlSize(.large)
                 }
             }
+        }
+        .overlay {
+            if reader.isListeningView {
+                ListeningExperience(reader: reader)
+                    .transition(.opacity)
+            }
+        }
+        .onChange(of: reader.isListeningView) { active in
+            syncListeningFullscreen(active)
+        }
+    }
+
+    private func syncListeningFullscreen(_ active: Bool) {
+        guard let window = NSApp.keyWindow else { return }
+        if active, !window.styleMask.contains(.fullScreen) {
+            listeningViewEnteredFullscreen = true
+            window.toggleFullScreen(nil)
+        } else if !active, listeningViewEnteredFullscreen, window.styleMask.contains(.fullScreen) {
+            listeningViewEnteredFullscreen = false
+            window.toggleFullScreen(nil)
         }
     }
 
@@ -227,6 +253,15 @@ struct ReaderView: View {
                         .font(.system(size: 13, weight: .medium)).frame(width: 118).padding(.vertical, 12)
                         .foregroundStyle(.white).background(green, in: Capsule())
                 }.buttonStyle(.plain).help("Read or pause (Space)")
+                if reader.canOpenListeningView {
+                    Button(action: reader.toggleListeningView) {
+                        Image(systemName: "rectangle.inset.filled").font(.system(size: 14, weight: .medium))
+                            .frame(width: 38, height: 38).foregroundStyle(green)
+                            .background(green.opacity(0.10), in: Circle())
+                    }
+                    .buttonStyle(.plain).help("Open listening view (F5)")
+                    .accessibilityLabel("Open listening view")
+                }
                 Spacer()
                 Text(String(format: "%.2g× · %@", reader.rate, speech.provider == .openRouter ? speech.voice : "Mac voice")).font(.system(size: 11)).foregroundStyle(.secondary).lineLimit(1).frame(width: 125, alignment: .trailing)
             }
@@ -253,6 +288,80 @@ struct ReaderView: View {
         }
     }
 
+}
+
+private struct ListeningExperience: View {
+    @ObservedObject var reader: ReaderModel
+
+    var body: some View {
+        ZStack {
+            paper.ignoresSafeArea()
+                .contentShape(Rectangle())
+                .onTapGesture { reader.dismissListeningView() }
+            cornerOrnaments
+            VStack(spacing: 0) {
+                VStack(spacing: 8) {
+                    Text(reader.book.title.uppercased())
+                        .font(.system(size: 11, weight: .semibold)).tracking(2).foregroundStyle(green.opacity(0.78))
+                    Text(reader.chapter.title)
+                        .font(.system(size: 19, weight: .medium, design: .serif))
+                }
+                .padding(.top, 44)
+                Spacer(minLength: 24)
+                Text(reader.listeningSentence)
+                    .id(reader.listeningSentenceID)
+                    .font(.system(size: sentenceFontSize, weight: .medium, design: .serif))
+                    .multilineTextAlignment(.center)
+                    .lineSpacing(12)
+                    .minimumScaleFactor(0.35)
+                    .frame(maxWidth: 1_000, maxHeight: .infinity)
+                    .padding(.horizontal, 80)
+                    .transition(.opacity.combined(with: .scale(scale: 0.96)))
+                    .animation(.easeInOut(duration: 0.28), value: reader.listeningSentenceID)
+                Spacer(minLength: 24)
+                HStack(spacing: 16) {
+                    Image(systemName: reader.isReading ? "speaker.wave.2.fill" : "pause.circle.fill")
+                    Text(reader.isReading ? "Listening" : "Paused")
+                    Text("Click anywhere to exit")
+                    Text("F5 also exits fullscreen").opacity(0.72)
+                }
+                .font(.system(size: 13, weight: .medium))
+                .foregroundStyle(green.opacity(0.86))
+                .padding(.bottom, 34)
+            }
+            .contentShape(Rectangle())
+        }
+        .onTapGesture { reader.dismissListeningView() }
+        .onExitCommand { reader.dismissListeningView() }
+    }
+
+    private var cornerOrnaments: some View {
+        ZStack {
+            ornament("leaf.fill", alignment: .topLeading, rotation: -25)
+            ornament("leaf.fill", alignment: .topTrailing, rotation: 35)
+            ornament("sparkles", alignment: .bottomLeading, rotation: 0)
+            ornament("sparkles", alignment: .bottomTrailing, rotation: 0)
+        }
+        .allowsHitTesting(false)
+    }
+
+    private func ornament(_ name: String, alignment: Alignment, rotation: Double) -> some View {
+        Image(systemName: name)
+            .font(.system(size: 54, weight: .ultraLight))
+            .foregroundStyle(green.opacity(0.12))
+            .rotationEffect(.degrees(rotation))
+            .padding(42)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: alignment)
+    }
+
+    private var sentenceFontSize: CGFloat {
+        switch reader.listeningSentence.count {
+        case ..<90: return 64
+        case ..<170: return 52
+        case ..<280: return 42
+        default: return 34
+        }
+    }
 }
 
 private struct DictionaryLookupView: View {

@@ -35,6 +35,7 @@ final class ReaderModel: NSObject, ObservableObject, AVSpeechSynthesizerDelegate
     @Published var pageIndex = 0
     @Published var pages = [NSRange(location: 0, length: 0)]
     @Published var highlight: NSRange?
+    @Published private(set) var spokenRange: NSRange?
     @Published var state: ReadingSession.State = .idle
     @Published var fontSize: CGFloat { didSet { UserDefaults.standard.set(Double(fontSize), forKey: "readerFontSize") } }
     @Published var rate: Float = 1
@@ -45,6 +46,7 @@ final class ReaderModel: NSObject, ObservableObject, AVSpeechSynthesizerDelegate
     @Published var showSettings = false
     @Published var preparingCloud = false
     @Published var isPreviewing = false
+    @Published var isListeningView = false
     @Published private(set) var bookmarks: [TextBookmark] = []
     @Published private(set) var selectedText = ""
     @Published private(set) var selectedBookmark: TextBookmark?
@@ -87,12 +89,31 @@ final class ReaderModel: NSObject, ObservableObject, AVSpeechSynthesizerDelegate
     var pageRange: NSRange { pages[min(pageIndex, pages.count - 1)] }
     var pageText: String { (chapter.text as NSString).substring(with: pageRange) }
     var isReading: Bool { state == .speaking }
+    var canOpenListeningView: Bool { state == .speaking || state == .paused }
     var progress: Double { (Double(chapterIndex) + Double(pageIndex + 1) / Double(max(1, pages.count))) / Double(book.chapters.count) }
     var localHighlight: NSRange? {
         guard let highlight else { return nil }
         let intersection = NSIntersectionRange(highlight, pageRange)
         guard intersection.length > 0 else { return nil }
         return NSRange(location: intersection.location - pageRange.location, length: intersection.length)
+    }
+    var listeningSentence: String {
+        let text = chapter.text as NSString
+        let offset = spokenRange?.location ?? session.utteranceStart
+        let sentences = CloudAlignment.sentenceRanges(chapter.text)
+        let sentence = sentences.first {
+            $0.location <= offset && offset < NSMaxRange($0)
+        } ?? sentences.first(where: { $0.location >= offset })
+        guard let sentence else { return pageText }
+        return text.substring(with: sentence)
+    }
+
+    var listeningSentenceID: String {
+        let offset = spokenRange?.location ?? session.utteranceStart
+        let sentence = CloudAlignment.sentenceRanges(chapter.text).first {
+            $0.location <= offset && offset < NSMaxRange($0)
+        }
+        return sentence.map { "\($0.location):\($0.length)" } ?? "page:\(pageRange.location)"
     }
     var bookmarkLocalRanges: [NSRange] {
         bookmarks.compactMap { bookmark in
@@ -143,7 +164,17 @@ final class ReaderModel: NSObject, ObservableObject, AVSpeechSynthesizerDelegate
         }
     }
 
+    func toggleListeningView() {
+        guard isListeningView || canOpenListeningView else { return }
+        isListeningView.toggle()
+    }
+
+    func dismissListeningView() {
+        isListeningView = false
+    }
+
     func stop() {
+        isListeningView = false
         session.cancel()
         activeUtterance = nil
         activeGeneration = nil
@@ -155,6 +186,7 @@ final class ReaderModel: NSObject, ObservableObject, AVSpeechSynthesizerDelegate
         isPreviewing = false
         usingCloud = false
         highlight = nil
+        spokenRange = nil
         state = .idle
     }
 
@@ -417,6 +449,7 @@ final class ReaderModel: NSObject, ObservableObject, AVSpeechSynthesizerDelegate
                             onWord: { [weak self] range in
                                 guard let self, self.activeGeneration == token else { return }
                                 if let range, let absolute = self.session.word(range, generation: token) {
+                                    self.spokenRange = absolute
                                     self.highlight = self.speechSettings.wordHighlighting ? absolute : nil
                                     let next = ReadingSession.page(containing: absolute.location, in: self.pages)
                                     if next != self.pageIndex {
@@ -467,6 +500,7 @@ final class ReaderModel: NSObject, ObservableObject, AVSpeechSynthesizerDelegate
                 spoken = sentence
             }
             guard let absolute = self.session.word(spoken, generation: token) else { return }
+            self.spokenRange = absolute
             self.highlight = absolute
             let next = ReadingSession.page(containing: absolute.location, in: self.pages)
             if next != self.pageIndex {
@@ -488,6 +522,7 @@ final class ReaderModel: NSObject, ObservableObject, AVSpeechSynthesizerDelegate
     private func completeChapter() {
         guard let token = activeGeneration, session.finish(generation: token) else { return }
         highlight = nil
+        spokenRange = nil
         if chapterIndex + 1 < book.chapters.count {
             chapterIndex += 1
             pageIndex = 0
@@ -499,6 +534,7 @@ final class ReaderModel: NSObject, ObservableObject, AVSpeechSynthesizerDelegate
             activeUtterance = nil
             activeGeneration = nil
             state = .finished
+            isListeningView = false
             savePosition()
         }
     }
