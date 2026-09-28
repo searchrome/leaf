@@ -349,24 +349,30 @@ public enum CloudAlignment {
         var chunks: [SpeechChunk] = []
         var start = 0
         while start < ns.length {
-            let chunkLimit = chunks.isEmpty ? firstLimit ?? limit : limit
-            let bound = min(ns.length, start + max(100, chunkLimit))
-            var end = ends.last(where: { $0 > start && $0 <= bound }) ?? bound
-            if end == bound, bound < ns.length {
-                let search = NSRange(location: start, length: bound - start)
-                let space = ns.rangeOfCharacter(from: .whitespacesAndNewlines, options: .backwards, range: search)
-                if space.location != NSNotFound, space.location > start { end = NSMaxRange(space) }
-                else {
-                    // Do not split a surrogate pair or composed character in long unbroken text.
-                    end = NSMaxRange(ns.rangeOfComposedCharacterSequence(at: bound - 1))
-                }
-            }
-            if ns.rangeOfCharacter(from: CharacterSet.whitespacesAndNewlines.inverted, range: NSRange(location: start, length: ns.length - start)).location == NSNotFound {
+            let content = ns.rangeOfCharacter(from: CharacterSet.whitespacesAndNewlines.inverted,
+                                              range: NSRange(location: start, length: ns.length - start))
+            guard content.location != NSNotFound else {
                 if let previous = chunks.popLast() {
                     let range = NSRange(location: previous.range.location, length: ns.length - previous.range.location)
                     chunks.append(SpeechChunk(text: ns.substring(with: range), range: range))
                 }
                 break
+            }
+            // The sentence tokenizer can emit a leading newline as its own token.
+            // Keep that whitespace in the source range, but require spoken content
+            // before accepting a boundary or we send a blank TTS request.
+            let contentStart = content.location
+            let chunkLimit = chunks.isEmpty ? firstLimit ?? limit : limit
+            let bound = min(ns.length, contentStart + max(100, chunkLimit))
+            var end = ends.last(where: { $0 > contentStart && $0 <= bound }) ?? bound
+            if end == bound, bound < ns.length {
+                let search = NSRange(location: contentStart, length: bound - contentStart)
+                let space = ns.rangeOfCharacter(from: .whitespacesAndNewlines, options: .backwards, range: search)
+                if space.location != NSNotFound, space.location > contentStart { end = NSMaxRange(space) }
+                else {
+                    // Do not split a surrogate pair or composed character in long unbroken text.
+                    end = NSMaxRange(ns.rangeOfComposedCharacterSequence(at: bound - 1))
+                }
             }
             let range = NSRange(location: start, length: end - start)
             chunks.append(SpeechChunk(text: ns.substring(with: range), range: range))
@@ -443,6 +449,9 @@ public struct OpenRouterClient {
     }
 
     public func speech(text: String, model: String, voice: String, key: String) async throws -> Data {
+        guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            throw CloudSpeechError.message("There is no text to read in this passage.")
+        }
         let usesPCM = model.hasPrefix("google/gemini-")
         let data = try await post("audio/speech", body: ["model": model, "input": text, "voice": voice, "response_format": usesPCM ? "pcm" : "mp3"], key: key, operation: "speech generation (\(model), voice \(voice))", privateValues: [text])
         guard !data.isEmpty, data.count <= 20_000_000 else { throw CloudSpeechError.message("The voice provider returned empty or oversized audio.") }

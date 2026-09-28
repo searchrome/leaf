@@ -3,6 +3,29 @@ import AVFoundation
 @testable import ReaderCore
 
 final class CloudSpeechTests: XCTestCase {
+    func testNarrationChunksKeepWhitespaceWithSpokenTextAndPreserveOffsets() {
+        let longSentence = String(repeating: "A quiet word ", count: 35) + "."
+        for text in [
+            "\n" + longSentence,
+            "\n\t\u{00a0}" + longSentence + "\n\nA final sentence.\n",
+            "First sentence." + String(repeating: "\n ", count: 200) + longSentence,
+            String(repeating: "\n", count: 400) + "Café 👩🏽‍🚀 reads."
+        ] {
+            let chunks = CloudAlignment.narrationChunks(text)
+            XCTAssertFalse(chunks.isEmpty)
+            XCTAssertEqual(chunks.map(\.text).joined(), text)
+            var offset = 0
+            for chunk in chunks {
+                XCTAssertFalse(chunk.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                XCTAssertEqual(chunk.range.location, offset)
+                XCTAssertEqual((text as NSString).substring(with: chunk.range), chunk.text)
+                offset = NSMaxRange(chunk.range)
+            }
+            XCTAssertEqual(offset, text.utf16.count)
+        }
+        XCTAssertTrue(CloudAlignment.narrationChunks("\n\t \u{00a0}\n").isEmpty)
+    }
+
     func testAlignmentUsesSourceUTF16OffsetsAndActualTimestamps() throws {
         let text = "👩🏽‍🚀 Café, welcome home."
         let words = [TranscriptWord(word: "Cafe", start: 0.2, end: 0.5), TranscriptWord(word: "welcome", start: 0.6, end: 1), TranscriptWord(word: "home.", start: 1.1, end: 1.4)]
@@ -179,6 +202,19 @@ final class OpenRouterClientTests: XCTestCase {
     }
 
     override func tearDown() { StubHTTP.handler = nil; super.tearDown() }
+
+    func testBlankSpeechIsRejectedBeforeMakingARequest() async {
+        StubHTTP.handler = { _ in
+            XCTFail("Blank passages must never reach the speech provider")
+            return (502, Data())
+        }
+        do {
+            _ = try await client().speech(text: "\n\t \u{00a0}", model: "hexgrad/kokoro-82m", voice: "af_sarah", key: "test-placeholder")
+            XCTFail("Expected local empty-passage error")
+        } catch {
+            XCTAssertEqual(error.localizedDescription, "There is no text to read in this passage.")
+        }
+    }
 
     func testSpeechRequestUsesSelectedModelVoiceAndAudioFormat() async throws {
         StubHTTP.handler = { request in
