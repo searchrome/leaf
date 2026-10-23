@@ -37,13 +37,15 @@ final class ReaderModel: NSObject, ObservableObject, AVSpeechSynthesizerDelegate
     @Published var highlight: NSRange?
     @Published private(set) var spokenRange: NSRange?
     @Published var state: ReadingSession.State = .idle
-    @Published var fontSize: CGFloat { didSet { UserDefaults.standard.set(Double(fontSize), forKey: "readerFontSize") } }
+    @Published var fontSize: CGFloat { didSet { defaults.set(Double(fontSize), forKey: "readerFontSize") } }
     @Published var rate: Float = 1
     @Published var voiceID = ""
     @Published var error: String?
     @Published var cloudNotice: String?
     @Published var isImporting = false
     @Published var showSettings = false
+    @Published var showLibrary = false
+    @Published private(set) var library: [LibraryBook] = []
     @Published var preparingCloud = false
     @Published var isPreviewing = false
     @Published var isListeningView = false
@@ -65,19 +67,21 @@ final class ReaderModel: NSObject, ObservableObject, AVSpeechSynthesizerDelegate
     private var viewport = CGSize(width: 580, height: 570)
     private var importTask: Task<Void, Never>?
     private var bookURL: URL?
-    private var pendingRestore: ReadingPosition?
+    private let defaults: UserDefaults
     private var terminationObserver: NSObjectProtocol?
     private var selectedRange: NSRange?
     private var lookupTask: Task<Void, Never>?
 
-    override init() {
-        let storedSize = UserDefaults.standard.double(forKey: "readerFontSize")
+    init(restorePosition: Bool = true, defaults: UserDefaults = .standard) {
+        self.defaults = defaults
+        library = BookLibraryStore.load(defaults: defaults)
+        let storedSize = defaults.double(forKey: "readerFontSize")
         fontSize = storedSize > 0 ? CGFloat(storedSize) : 21
         super.init()
         synthesizer.delegate = self
         repaginate()
         loadBookmarks()
-        restoreSavedPosition()
+        if restorePosition { restoreSavedPosition() }
         terminationObserver = NotificationCenter.default.addObserver(forName: NSApplication.willTerminateNotification, object: nil, queue: nil) { [weak self] _ in
             MainActor.assumeIsolated {
                 self?.savePosition()
@@ -374,38 +378,59 @@ final class ReaderModel: NSObject, ObservableObject, AVSpeechSynthesizerDelegate
         TextBookmarkStore.save(bookmarks, bookID: bookmarkBookID)
     }
 
+    var currentLibraryID: String? { bookURL?.standardizedFileURL.absoluteString }
+
+    func openLibraryBook(_ entry: LibraryBook) {
+        if entry.id == currentLibraryID {
+            showLibrary = false
+            return
+        }
+        guard let url = entry.resolvedURL(), FileManager.default.fileExists(atPath: url.path) else {
+            error = "“\(entry.title)” is no longer available at its saved location. Use Open a book to locate the EPUB again."
+            return
+        }
+        savePosition()
+        load(url, position: ReadingPosition(bookmark: entry.bookmark, chapterIndex: entry.chapterIndex, pageIndex: entry.pageIndex))
+    }
+
+    func removeLibraryBook(_ entry: LibraryBook) {
+        library.removeAll { $0.id == entry.id }
+        BookLibraryStore.save(library, defaults: defaults)
+    }
+
     func savePosition() {
         guard !isImporting else { return }
         let bookmark = bookURL.flatMap { try? $0.bookmarkData(options: [], includingResourceValuesForKeys: nil, relativeTo: nil) }
         ReadingPositionStore.save(
             ReadingPosition(bookmark: bookmark, chapterIndex: chapterIndex, pageIndex: pageIndex),
-            defaults: .standard)
+            defaults: defaults)
+        if let id = currentLibraryID, let index = library.firstIndex(where: { $0.id == id }) {
+            library[index].chapterIndex = chapterIndex
+            library[index].pageIndex = pageIndex
+            library[index].bookmark = bookmark
+            BookLibraryStore.save(library, defaults: defaults)
+        }
     }
 
     private func restoreSavedPosition() {
-        guard let saved = ReadingPositionStore.load(defaults: .standard) else { return }
-        pendingRestore = saved
-        var url: URL?
+        guard let saved = ReadingPositionStore.load(defaults: defaults) else { return }
         if let data = saved.bookmark {
             var isStale = false
-            url = try? URL(resolvingBookmarkData: data, options: [], relativeTo: nil, bookmarkDataIsStale: &isStale)
-        }
-        if let url, FileManager.default.fileExists(atPath: url.path) {
-            load(url)
-        } else if saved.bookmark == nil {
-            applyRestoredPosition()
+            if let url = try? URL(resolvingBookmarkData: data, options: [], relativeTo: nil, bookmarkDataIsStale: &isStale),
+               FileManager.default.fileExists(atPath: url.path) {
+                load(url, position: saved)
+            }
+        } else {
+            applyRestoredPosition(saved)
         }
     }
 
-    private func applyRestoredPosition() {
-        guard let restore = pendingRestore else { return }
-        pendingRestore = nil
-        chapterIndex = min(restore.chapterIndex, book.chapters.count - 1)
+    private func applyRestoredPosition(_ restore: ReadingPosition) {
+        chapterIndex = min(max(0, restore.chapterIndex), book.chapters.count - 1)
         pageIndex = 0
         pages = [NSRange(location: 0, length: 0)]
         repaginate()
-        pageIndex = min(restore.pageIndex, pages.count - 1)
-        savePosition()
+        pageIndex = min(max(0, restore.pageIndex), pages.count - 1)
     }
 
     func updateVoice() {
@@ -549,6 +574,13 @@ final class ReaderModel: NSObject, ObservableObject, AVSpeechSynthesizerDelegate
     }
 
     func load(_ url: URL) {
+        savePosition()
+        let entry = library.first { $0.id == url.standardizedFileURL.absoluteString }
+        let position = entry.map { ReadingPosition(bookmark: $0.bookmark, chapterIndex: $0.chapterIndex, pageIndex: $0.pageIndex) }
+        load(url, position: position)
+    }
+
+    private func load(_ url: URL, position: ReadingPosition?) {
         stop()
         importTask?.cancel()
         isImporting = true
@@ -564,8 +596,15 @@ final class ReaderModel: NSObject, ObservableObject, AVSpeechSynthesizerDelegate
                 clearSelection()
                 loadBookmarks()
                 repaginate()
-                applyRestoredPosition()
+                if let position { applyRestoredPosition(position) }
+                let id = url.standardizedFileURL.absoluteString
+                library.removeAll { $0.id == id }
+                library.insert(LibraryBook(id: id, title: imported.title, author: imported.author,
+                                           bookmark: nil, chapterIndex: chapterIndex, pageIndex: pageIndex,
+                                           lastOpened: Date()), at: 0)
                 isImporting = false
+                savePosition()
+                showLibrary = false
             } catch {
                 guard !Task.isCancelled else { return }
                 self.error = error.localizedDescription

@@ -16,11 +16,12 @@ struct LeafApp: App {
         .commands {
             CommandGroup(replacing: .newItem) {
                 Button("Open EPUB…", action: reader.openBook).keyboardShortcut("o")
+                Button("Library") { reader.showLibrary = true }.keyboardShortcut("l")
             }
             CommandMenu("Reading") {
                 Button(reader.isReading ? "Pause" : "Read aloud", action: reader.toggleReading).keyboardShortcut(" ", modifiers: [])
-                Button("Next page") { reader.turnPage(1) }.keyboardShortcut(.rightArrow, modifiers: [])
-                Button("Previous page") { reader.turnPage(-1) }.keyboardShortcut(.leftArrow, modifiers: [])
+                Button("Next page") { reader.turnPage(1) }.keyboardShortcut(.rightArrow, modifiers: []).disabled(reader.showLibrary)
+                Button("Previous page") { reader.turnPage(-1) }.keyboardShortcut(.leftArrow, modifiers: []).disabled(reader.showLibrary)
                 Button(reader.isListeningView ? "Exit listening view" : "Open listening view") {
                     reader.toggleListeningView()
                 }
@@ -85,9 +86,10 @@ struct ReaderView: View {
         }
         .foregroundStyle(ink)
         .preferredColorScheme(.light)
-        .alert("Leaf needs your attention", isPresented: Binding(get: { reader.error != nil && !reader.showSettings }, set: { if !$0 { reader.error = nil } })) {
+        .alert("Leaf needs your attention", isPresented: Binding(get: { reader.error != nil && !reader.showSettings && !reader.showLibrary }, set: { if !$0 { reader.error = nil } })) {
             Button("OK") { reader.error = nil }
         } message: { Text(reader.error ?? "") }
+        .sheet(isPresented: $reader.showLibrary) { BookLibraryView(reader: reader) }
         .sheet(item: $reader.lookupResult) { result in
             DictionaryLookupView(result: result)
         }
@@ -130,6 +132,17 @@ struct ReaderView: View {
             Button(action: reader.openBook) {
                 Label("Open a book", systemImage: "plus").frame(maxWidth: .infinity).padding(.vertical, 9)
             }.buttonStyle(.bordered).controlSize(.large).disabled(reader.isImporting)
+            Button { reader.showLibrary = true } label: {
+                HStack {
+                    Label("Library", systemImage: "books.vertical")
+                    Spacer()
+                    Text("\(reader.library.count)").foregroundStyle(.secondary)
+                }
+                .padding(.vertical, 10)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain).padding(.top, 8)
+            .help("Previously opened books (⌘L)")
             Text("ON YOUR DESK").font(.system(size: 10, weight: .semibold)).tracking(1.6).foregroundStyle(.secondary).padding(.top, 35)
             Image(systemName: "book.closed.fill")
                 .font(.system(size: 37, weight: .ultraLight)).foregroundStyle(Color(red: 0.85, green: 0.87, blue: 0.72))

@@ -25,7 +25,7 @@ Drag to select a word, phrase, or passage. The contextual menu and the controls 
 
 Look Up uses the free dictionaries enabled in macOS Dictionary first, without sending the selection anywhere. If there is no local definition, Leaf uses the saved OpenRouter key to ask `deepseek/deepseek-v4.1-flash` for a short, contextual definition. That fallback sends the selected text and a small surrounding passage to OpenRouter and may use account credits.
 
-The app remembers the last open book and the page you left: relaunch continues on that chapter and page.
+Open **Library** in the sidebar (Command-L) to search and reopen previously opened books. Each book remembers its own chapter and page, and relaunch continues with the last book. Removing a library entry keeps its EPUB file and bookmarks. Books stay in their original locations; use **Open a book** to locate an EPUB again if it has been moved or deleted.
 
 ## What is implemented
 
@@ -41,7 +41,7 @@ A live Gemini/Zephyr sample has been generated with the saved key and decoded by
 
 The app never silently switches back to a Mac voice. Local speech remains available in the provider selector and requires no key or network connection. See the [OpenRouter speech API](https://openrouter.ai/docs/guides/overview/multimodal/tts) and [timestamped transcription API](https://openrouter.ai/docs/api/api-reference/stt/create-transcription) used by the adapter.
 
-This first version renders chapter text and paragraphs. Publisher CSS/images, persistent library/positions, full EPUB navigation, encrypted resources, and notarized distribution are not included yet.
+This first version renders chapter text and paragraphs. Publisher CSS/images, full EPUB navigation, encrypted resources, and notarized distribution are not included yet.
 
 ## Design and implementation plan
 
