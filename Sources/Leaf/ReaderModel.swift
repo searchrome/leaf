@@ -4,30 +4,6 @@ import ReaderCore
 import SwiftUI
 import UniformTypeIdentifiers
 
-struct ReadingPosition: Codable, Equatable {
-    var bookmark: Data?
-    var chapterIndex: Int
-    var pageIndex: Int
-}
-
-@MainActor
-enum ReadingPositionStore {
-    static let key = "readingPosition"
-
-    static func save(_ position: ReadingPosition, defaults: UserDefaults) {
-        if let data = try? JSONEncoder().encode(position) {
-            defaults.set(data, forKey: key)
-        }
-    }
-
-    static func load(defaults: UserDefaults) -> ReadingPosition? {
-        guard let data = defaults.data(forKey: key),
-              let position = try? JSONDecoder().decode(ReadingPosition.self, from: data),
-              position.chapterIndex >= 0, position.pageIndex >= 0 else { return nil }
-        return position
-    }
-}
-
 @MainActor
 final class ReaderModel: NSObject, ObservableObject, AVSpeechSynthesizerDelegate {
     @Published var book = Demo.book
@@ -36,7 +12,7 @@ final class ReaderModel: NSObject, ObservableObject, AVSpeechSynthesizerDelegate
     @Published var pages = [NSRange(location: 0, length: 0)]
     @Published var highlight: NSRange?
     @Published private(set) var spokenRange: NSRange?
-    @Published var state: ReadingSession.State = .idle
+    @Published var state: ReadingSession.State = .idle { didSet { updatePlaybackActivity() } }
     @Published var fontSize: CGFloat { didSet { defaults.set(Double(fontSize), forKey: "readerFontSize") } }
     @Published var rate: Float = 1
     @Published var voiceID = ""
@@ -47,7 +23,7 @@ final class ReaderModel: NSObject, ObservableObject, AVSpeechSynthesizerDelegate
     @Published var showLibrary = false
     @Published private(set) var library: [LibraryBook] = []
     @Published var preparingCloud = false
-    @Published var isPreviewing = false
+    @Published var isPreviewing = false { didSet { updatePlaybackActivity() } }
     @Published var isListeningView = false
     @Published private(set) var bookmarks: [TextBookmark] = []
     @Published private(set) var selectedText = ""
@@ -56,6 +32,7 @@ final class ReaderModel: NSObject, ObservableObject, AVSpeechSynthesizerDelegate
     @Published private(set) var isLookingUp = false
     let speechSettings = SpeechSettings()
     private let cloud = CloudNarrator()
+    private let playbackActivity = PlaybackActivity()
     private var usingCloud = false
     let voices = AVSpeechSynthesisVoice.speechVoices().sorted { $0.name < $1.name }
     private var session = ReadingSession()
@@ -64,6 +41,11 @@ final class ReaderModel: NSObject, ObservableObject, AVSpeechSynthesizerDelegate
     private var activeGeneration: UUID?
     private var utteranceSentenceRanges: [NSRange] = []
     private var deferredCompletion = false
+    private var pendingSpeechStart: Int?
+    private var readingOffset: Int?
+    private var speechResumeOffset: Int?
+    private var lastPositionSave = Date.distantPast
+    private var positionPersistenceEnabled = true
     private var viewport = CGSize(width: 580, height: 570)
     private var importTask: Task<Void, Never>?
     private var bookURL: URL?
@@ -89,10 +71,23 @@ final class ReaderModel: NSObject, ObservableObject, AVSpeechSynthesizerDelegate
         }
     }
 
+    deinit {
+        if let terminationObserver { NotificationCenter.default.removeObserver(terminationObserver) }
+        importTask?.cancel()
+        lookupTask?.cancel()
+    }
+
     var chapter: Chapter { book.chapters[chapterIndex] }
     var pageRange: NSRange { pages[min(pageIndex, pages.count - 1)] }
     var pageText: String { (chapter.text as NSString).substring(with: pageRange) }
     var isReading: Bool { state == .speaking }
+    var narrationStartOffset: Int { speechResumeOffset.map { sentenceStart(at: $0) } ?? pageRange.location }
+    var preventsIdleSleep: Bool { playbackActivity.isActive }
+
+    private func updatePlaybackActivity() {
+        playbackActivity.setActive(state == .speaking || isPreviewing)
+    }
+
     var canOpenListeningView: Bool { state == .speaking || state == .paused }
     var progress: Double { (Double(chapterIndex) + Double(pageIndex + 1) / Double(max(1, pages.count))) / Double(book.chapters.count) }
     var localHighlight: NSRange? {
@@ -140,10 +135,12 @@ final class ReaderModel: NSObject, ObservableObject, AVSpeechSynthesizerDelegate
         guard abs(next.width - viewport.width) > 1 || abs(next.height - viewport.height) > 1 else { return }
         viewport = next
         repaginate()
+        savePosition()
     }
 
     func repaginate() {
-        let anchor = (state == .speaking || state == .paused) && session.chapter == chapterIndex ? session.offset : pageRange.location
+        let anchor = (state == .speaking || state == .paused) && session.chapter == chapterIndex ? session.offset : (readingOffset ?? pageRange.location)
+        readingOffset = anchor
         pages = Pagination.pages(for: chapter.text, fontSize: fontSize, size: viewport)
         pageIndex = ReadingSession.page(containing: anchor, in: pages)
     }
@@ -151,10 +148,12 @@ final class ReaderModel: NSObject, ObservableObject, AVSpeechSynthesizerDelegate
     func toggleReading() {
         switch state {
         case .speaking:
-            session.pause()
-            state = session.state
-            if usingCloud { cloud.pause() } else { synthesizer.pauseSpeaking(at: .immediate) }
+            pauseCurrentReading()
         case .paused:
+            if let offset = pendingSpeechStart {
+                speak(from: offset, preservingListeningView: isListeningView)
+                return
+            }
             session.resume()
             state = session.state
             if deferredCompletion {
@@ -164,7 +163,7 @@ final class ReaderModel: NSObject, ObservableObject, AVSpeechSynthesizerDelegate
                 if usingCloud { cloud.resume() } else { synthesizer.continueSpeaking() }
             }
         case .idle, .finished:
-            speak(from: pageRange.location)
+            speak(from: narrationStartOffset)
         }
     }
 
@@ -177,13 +176,25 @@ final class ReaderModel: NSObject, ObservableObject, AVSpeechSynthesizerDelegate
         isListeningView = false
     }
 
-    func stop() {
-        isListeningView = false
+    private func pauseCurrentReading() {
+        session.pause()
+        state = session.state
+        if usingCloud { cloud.pause() } else { synthesizer.pauseSpeaking(at: .immediate) }
+        savePosition()
+    }
+
+    func stop(preservingListeningView: Bool = false) {
+        if canOpenListeningView, session.chapter == chapterIndex {
+            readingOffset = session.offset
+            speechResumeOffset = session.offset
+        }
+        if !preservingListeningView { isListeningView = false }
         session.cancel()
         activeUtterance = nil
         activeGeneration = nil
         utteranceSentenceRanges = []
         deferredCompletion = false
+        pendingSpeechStart = nil
         synthesizer.stopSpeaking(at: .immediate)
         cloud.stop()
         preparingCloud = false
@@ -197,6 +208,8 @@ final class ReaderModel: NSObject, ObservableObject, AVSpeechSynthesizerDelegate
     func selectChapter(_ index: Int) {
         guard book.chapters.indices.contains(index) else { return }
         stop()
+        readingOffset = nil
+        speechResumeOffset = nil
         chapterIndex = index
         pageIndex = 0
         pages = [NSRange(location: 0, length: 0)]
@@ -206,19 +219,73 @@ final class ReaderModel: NSObject, ObservableObject, AVSpeechSynthesizerDelegate
     }
 
     func turnPage(_ direction: Int) {
-        stop()
-        clearSelection()
+        guard direction != 0 else { return }
+        let wasReading = state == .speaking || state == .paused
+        let wasPaused = state == .paused
+        let keepListeningView = isListeningView
         let next = pageIndex + direction
+        let destinationChapter: Int
+        let destinationPage: Int
         if next < 0, chapterIndex > 0 {
-            selectChapter(chapterIndex - 1)
-            pageIndex = pages.count - 1
-            savePosition()
+            destinationChapter = chapterIndex - 1
+            destinationPage = Int.max
         } else if next >= pages.count, chapterIndex < book.chapters.count - 1 {
-            selectChapter(chapterIndex + 1)
+            destinationChapter = chapterIndex + 1
+            destinationPage = 0
+        } else if pages.indices.contains(next) {
+            destinationChapter = chapterIndex
+            destinationPage = next
         } else {
-            pageIndex = min(max(next, 0), pages.count - 1)
-            savePosition()
+            // A boundary key press should not stop speech or clear a pause.
+            return
         }
+
+        stop(preservingListeningView: true)
+        clearSelection()
+        readingOffset = nil
+        speechResumeOffset = nil
+        chapterIndex = destinationChapter
+        pages = [NSRange(location: 0, length: 0)]
+        repaginate()
+        pageIndex = min(destinationPage, pages.count - 1)
+        readingOffset = pageRange.location
+        savePosition()
+
+        if wasReading {
+            speak(from: pageRange.location, preservingListeningView: keepListeningView, initiallyPaused: wasPaused)
+        }
+    }
+
+    /// Arrow keys turn pages while idle and move speech by sentence while active.
+    func navigateReading(_ direction: Int) {
+        guard !isImporting, !showSettings, !showLibrary, lookupResult == nil else { return }
+        guard state == .speaking || state == .paused else {
+            turnPage(direction)
+            return
+        }
+        guard let destination = SentenceNavigation.destination(in: book.chapters,
+                                                              chapter: chapterIndex,
+                                                              offset: session.offset,
+                                                              direction: direction) else { return }
+        let wasPaused = state == .paused
+        let keepListeningView = isListeningView
+        stop(preservingListeningView: keepListeningView)
+        clearSelection()
+        if chapterIndex != destination.chapter {
+            readingOffset = nil
+            speechResumeOffset = nil
+            chapterIndex = destination.chapter
+            pages = [NSRange(location: 0, length: 0)]
+            repaginate()
+        }
+        pageIndex = ReadingSession.page(containing: destination.offset, in: pages)
+        speak(from: destination.offset, preservingListeningView: keepListeningView, initiallyPaused: wasPaused)
+        if canOpenListeningView,
+           let sentence = CloudAlignment.sentenceRanges(chapter.text).first(where: { $0.location == destination.offset }) {
+            spokenRange = sentence
+            highlight = speechSettings.wordHighlighting ? sentence : nil
+        }
+        savePosition()
     }
 
     /// Play from a clicked page location, snapped to the followed unit.
@@ -289,6 +356,8 @@ final class ReaderModel: NSObject, ObservableObject, AVSpeechSynthesizerDelegate
             return
         }
         stop()
+        readingOffset = bookmark.location
+        speechResumeOffset = nil
         chapterIndex = bookmark.chapterIndex
         pageIndex = 0
         pages = [NSRange(location: 0, length: 0)]
@@ -390,7 +459,7 @@ final class ReaderModel: NSObject, ObservableObject, AVSpeechSynthesizerDelegate
             return
         }
         savePosition()
-        load(url, position: ReadingPosition(bookmark: entry.bookmark, chapterIndex: entry.chapterIndex, pageIndex: entry.pageIndex))
+        load(url, position: ReadingPosition(bookmark: entry.bookmark, chapterIndex: entry.chapterIndex, pageIndex: entry.pageIndex, textOffset: entry.textOffset, speechOffset: entry.speechOffset, fileURL: url))
     }
 
     func removeLibraryBook(_ entry: LibraryBook) {
@@ -398,39 +467,72 @@ final class ReaderModel: NSObject, ObservableObject, AVSpeechSynthesizerDelegate
         BookLibraryStore.save(library, defaults: defaults)
     }
 
+    private func sentenceStart(at offset: Int) -> Int {
+        CloudAlignment.seekStart(chapter.text, at: offset, bySentence: true)
+    }
+
+    private func recordSpokenPosition(_ range: NSRange) {
+        readingOffset = range.location
+        speechResumeOffset = range.location
+        let next = ReadingSession.page(containing: range.location, in: pages)
+        let pageChanged = next != pageIndex
+        pageIndex = next
+        // Checkpoint even within a page, without serializing a file bookmark for
+        // every word callback. Pause, navigation and quit save immediately.
+        if pageChanged || Date().timeIntervalSince(lastPositionSave) >= 2 { savePosition() }
+    }
+
     func savePosition() {
-        guard !isImporting else { return }
+        guard !isImporting, positionPersistenceEnabled else { return }
+        let activeSpeech = canOpenListeningView && session.chapter == chapterIndex
+        let offset = activeSpeech ? session.offset : (readingOffset ?? pageRange.location)
+        let speechOffset = (activeSpeech ? session.offset : speechResumeOffset).map { sentenceStart(at: $0) }
         let bookmark = bookURL.flatMap { try? $0.bookmarkData(options: [], includingResourceValuesForKeys: nil, relativeTo: nil) }
         ReadingPositionStore.save(
-            ReadingPosition(bookmark: bookmark, chapterIndex: chapterIndex, pageIndex: pageIndex),
+            ReadingPosition(bookmark: bookmark, chapterIndex: chapterIndex, pageIndex: pageIndex,
+                            textOffset: offset, speechOffset: speechOffset, fileURL: bookURL),
             defaults: defaults)
+        lastPositionSave = Date()
         if let id = currentLibraryID, let index = library.firstIndex(where: { $0.id == id }) {
             library[index].chapterIndex = chapterIndex
             library[index].pageIndex = pageIndex
             library[index].bookmark = bookmark
+            library[index].textOffset = offset
+            library[index].speechOffset = speechOffset
             BookLibraryStore.save(library, defaults: defaults)
         }
     }
 
     private func restoreSavedPosition() {
         guard let saved = ReadingPositionStore.load(defaults: defaults) else { return }
+        var url = saved.fileURL
         if let data = saved.bookmark {
             var isStale = false
-            if let url = try? URL(resolvingBookmarkData: data, options: [], relativeTo: nil, bookmarkDataIsStale: &isStale),
-               FileManager.default.fileExists(atPath: url.path) {
-                load(url, position: saved)
-            }
-        } else {
+            url = (try? URL(resolvingBookmarkData: data, options: [], relativeTo: nil, bookmarkDataIsStale: &isStale)) ?? url
+        }
+        if let url, FileManager.default.fileExists(atPath: url.path) {
+            positionPersistenceEnabled = false
+            load(url, position: saved)
+        } else if saved.bookmark == nil && saved.fileURL == nil {
             applyRestoredPosition(saved)
+        } else {
+            positionPersistenceEnabled = false
+            error = "The last book is unavailable. Open it again to continue reading."
         }
     }
 
     private func applyRestoredPosition(_ restore: ReadingPosition) {
         chapterIndex = min(max(0, restore.chapterIndex), book.chapters.count - 1)
+        let lastOffset = max(0, chapter.text.utf16.count - 1)
+        readingOffset = restore.textOffset.map { min(max(0, $0), lastOffset) }
+        speechResumeOffset = restore.speechOffset.map { min(max(0, $0), lastOffset) }
         pageIndex = 0
         pages = [NSRange(location: 0, length: 0)]
         repaginate()
-        pageIndex = min(max(0, restore.pageIndex), pages.count - 1)
+        if restore.textOffset == nil {
+            pageIndex = min(max(0, restore.pageIndex), pages.count - 1)
+            readingOffset = pageRange.location
+        }
     }
 
     func updateVoice() {
@@ -459,14 +561,24 @@ final class ReaderModel: NSObject, ObservableObject, AVSpeechSynthesizerDelegate
         } catch { self.error = error.localizedDescription }
     }
 
-    private func speak(from offset: Int) {
-        stop()
+    private func speak(from offset: Int, preservingListeningView: Bool = false, initiallyPaused: Bool = false) {
+        stop(preservingListeningView: preservingListeningView)
         cloudNotice = nil
         let text = chapter.text as NSString
         let token = session.begin(chapter: chapterIndex, offset: offset, textLength: text.length)
         activeGeneration = token
+        readingOffset = session.offset
+        speechResumeOffset = session.offset
         state = session.state
-        if speechSettings.provider == .openRouter {
+        if initiallyPaused, state == .speaking {
+            session.pause()
+            state = session.state
+            pendingSpeechStart = session.utteranceStart
+            savePosition()
+            return
+        }
+        savePosition()
+        if speechSettings.provider != .mac {
             do {
                 let configuration = try speechSettings.configuration()
                 usingCloud = true
@@ -476,11 +588,7 @@ final class ReaderModel: NSObject, ObservableObject, AVSpeechSynthesizerDelegate
                                 if let range, let absolute = self.session.word(range, generation: token) {
                                     self.spokenRange = absolute
                                     self.highlight = self.speechSettings.wordHighlighting ? absolute : nil
-                                    let next = ReadingSession.page(containing: absolute.location, in: self.pages)
-                                    if next != self.pageIndex {
-                                        self.pageIndex = next
-                                        self.savePosition()
-                                    }
+                                    self.recordSpokenPosition(absolute)
                                 } else if range == nil, self.state == .speaking { self.highlight = nil }
                             },
                             onFinish: { [weak self] in
@@ -527,11 +635,14 @@ final class ReaderModel: NSObject, ObservableObject, AVSpeechSynthesizerDelegate
             guard let absolute = self.session.word(spoken, generation: token) else { return }
             self.spokenRange = absolute
             self.highlight = absolute
-            let next = ReadingSession.page(containing: absolute.location, in: self.pages)
-            if next != self.pageIndex {
-                self.pageIndex = next
-                self.savePosition()
-            }
+            self.recordSpokenPosition(absolute)
+        }
+    }
+
+    nonisolated func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didStart utterance: AVSpeechUtterance) {
+        Task { @MainActor in
+            guard utterance === self.activeUtterance, self.state == .paused else { return }
+            self.synthesizer.pauseSpeaking(at: .immediate)
         }
     }
 
@@ -549,12 +660,14 @@ final class ReaderModel: NSObject, ObservableObject, AVSpeechSynthesizerDelegate
         highlight = nil
         spokenRange = nil
         if chapterIndex + 1 < book.chapters.count {
+            readingOffset = nil
+            speechResumeOffset = nil
             chapterIndex += 1
             pageIndex = 0
             pages = [NSRange(location: 0, length: 0)]
             repaginate()
             savePosition()
-            speak(from: 0)
+            speak(from: 0, preservingListeningView: isListeningView)
         } else {
             activeUtterance = nil
             activeGeneration = nil
@@ -576,7 +689,7 @@ final class ReaderModel: NSObject, ObservableObject, AVSpeechSynthesizerDelegate
     func load(_ url: URL) {
         savePosition()
         let entry = library.first { $0.id == url.standardizedFileURL.absoluteString }
-        let position = entry.map { ReadingPosition(bookmark: $0.bookmark, chapterIndex: $0.chapterIndex, pageIndex: $0.pageIndex) }
+        let position = entry.map { ReadingPosition(bookmark: $0.bookmark, chapterIndex: $0.chapterIndex, pageIndex: $0.pageIndex, textOffset: $0.textOffset, speechOffset: $0.speechOffset, fileURL: url) }
         load(url, position: position)
     }
 
@@ -590,6 +703,8 @@ final class ReaderModel: NSObject, ObservableObject, AVSpeechSynthesizerDelegate
                 guard !Task.isCancelled else { return }
                 book = imported
                 bookURL = url
+                readingOffset = nil
+                speechResumeOffset = nil
                 chapterIndex = 0
                 pageIndex = 0
                 pages = [NSRange(location: 0, length: 0)]
@@ -603,6 +718,7 @@ final class ReaderModel: NSObject, ObservableObject, AVSpeechSynthesizerDelegate
                                            bookmark: nil, chapterIndex: chapterIndex, pageIndex: pageIndex,
                                            lastOpened: Date()), at: 0)
                 isImporting = false
+                positionPersistenceEnabled = true
                 savePosition()
                 showLibrary = false
             } catch {
@@ -612,37 +728,4 @@ final class ReaderModel: NSObject, ObservableObject, AVSpeechSynthesizerDelegate
             }
         }
     }
-}
-
-enum Demo {
-    static let book = Book(title: "A quieter kind of reading", author: "Welcome to Leaf", chapters: [
-        Chapter(id: "welcome", title: "A little room for a good book", text: """
-        A little room for a good book
-
-        There is a particular pleasure in opening a book when the rest of the world has grown quiet. A chair by the window. A little afternoon light. A sentence that asks for nothing except your attention.
-
-        Leaf is a place for that kind of reading. Open an EPUB, find your page, and settle in. When you would rather listen, press Read aloud. The voice begins on the page in front of you, and a small green highlight follows each spoken word.
-
-        You do not have to keep turning pages. As the story continues, Leaf moves with it, from page to page and chapter to chapter. Press Pause whenever you need a moment. Press Resume when you are ready to return.
-
-        The default voice belongs to your Mac. Your book stays on this computer, and reading aloud does not require an account or an internet connection. You can choose another installed voice or adjust the pace in Reading settings.
-
-        Try resizing this window while the voice is reading. The page can change its shape, but your place stays anchored to the words. A long word, a curly quotation mark, even a café on a rainy afternoon: the highlight follows the text itself.
-
-        This little introduction has a second chapter so you can try continuous reading before opening your own book. Leave the voice running, and it will take you there.
-
-        Outside the window, a branch moved in the wind. Somewhere a kettle clicked off. There was time for another page.
-        """),
-        Chapter(id: "next", title: "One more page", text: """
-        One more page
-
-        And here we are. The next chapter arrived without a click.
-
-        Good tools should leave room for the thing you came to do. For a reader, that means clear type, comfortable space, and a voice that knows where you are.
-
-        Use the arrows below to browse pages yourself. Choosing another page or chapter pauses the voice, so you can explore at your own pace. Read aloud will then begin at the top of that page.
-
-        Now open a book of your own. There is always another story waiting.
-        """)
-    ])
 }

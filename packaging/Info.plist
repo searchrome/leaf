@@ -4,10 +4,11 @@
     <key>CFBundleName</key><string>Leaf</string>
     <key>CFBundleDisplayName</key><string>Leaf</string>
     <key>CFBundleIdentifier</key><string>local.leaf.reader</string>
+    <key>CFBundleIconFile</key><string>Leaf.icns</string>
     <key>CFBundleExecutable</key><string>Leaf</string>
     <key>CFBundlePackageType</key><string>APPL</string>
     <key>CFBundleShortVersionString</key><string>0.1.0</string>
-    <key>CFBundleVersion</key><string>1</string>
+    <key>CFBundleVersion</key><string>2</string>
     <key>LSMinimumSystemVersion</key><string>13.0</string>
     <key>NSHighResolutionCapable</key><true/>
     <key>NSSupportsAutomaticTermination</key><false/>

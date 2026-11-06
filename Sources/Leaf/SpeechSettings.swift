@@ -5,7 +5,7 @@ import ReaderCore
 
 @MainActor
 final class SpeechSettings: ObservableObject {
-    enum Provider: String, CaseIterable { case mac = "Mac voice"; case openRouter = "OpenRouter" }
+    enum Provider: String, CaseIterable { case mac = "Mac voice"; case openRouter = "OpenRouter"; case local = "Local model" }
     @Published var provider: Provider { didSet { UserDefaults.standard.set(provider.rawValue, forKey: "speechProvider") } }
     @Published var model: String { didSet { UserDefaults.standard.set(model, forKey: "cloudModel") } }
     @Published var voice: String { didSet { UserDefaults.standard.set(voice, forKey: "cloudVoice") } }
@@ -13,6 +13,7 @@ final class SpeechSettings: ObservableObject {
     @Published var wordHighlighting: Bool { didSet { UserDefaults.standard.set(wordHighlighting, forKey: "cloudWordHighlighting") } }
     @Published var timingMode: CloudWordTiming { didSet { UserDefaults.standard.set(timingMode.rawValue, forKey: "cloudTimingMode") } }
     @Published var highlightGranularity: HighlightGranularity { didSet { UserDefaults.standard.set(highlightGranularity.rawValue, forKey: "highlightGranularity") } }
+    @Published var localVoice: String { didSet { UserDefaults.standard.set(localVoice, forKey: "localKokoroVoice") } }
     @Published var keyDraft = ""
     @Published var hasKey = false
     @Published var message: String?
@@ -21,21 +22,22 @@ final class SpeechSettings: ObservableObject {
 
     init() {
         let defaults = UserDefaults.standard
+        localVoice = defaults.string(forKey: "localKokoroVoice") ?? "af_heart"
         provider = Provider(rawValue: defaults.string(forKey: "speechProvider") ?? "") ?? .mac
-        let savedModel = defaults.string(forKey: "cloudModel") ?? SpeechModel.defaults[0].id
-        let savedVoice = defaults.string(forKey: "cloudVoice") ?? "Zephyr"
-        if savedModel == "google/gemini-3.8-flash-lite-tts" || savedModel == "google/gemini-3.1-flash-tts-preview" {
-            model = SpeechModel.defaults[0].id
-            voice = SpeechModel.defaults[0].supportedVoices?.first ?? savedVoice
-        } else {
-            model = savedModel
-            voice = savedVoice
-        }
+        let selection = Self.savedSelection(defaults: defaults)
+        model = selection.model
+        voice = selection.voice
         timingModel = defaults.string(forKey: "timingModel") ?? "openai/whisper-1"
         wordHighlighting = defaults.object(forKey: "cloudWordHighlighting") as? Bool ?? true
         timingMode = CloudWordTiming(rawValue: defaults.string(forKey: "cloudTimingMode") ?? "") ?? .estimated
         highlightGranularity = HighlightGranularity(rawValue: defaults.string(forKey: "highlightGranularity") ?? "") ?? .sentence
         hasKey = KeychainKey.exists
+    }
+
+    static func savedSelection(defaults: UserDefaults) -> (model: String, voice: String) {
+        let model = defaults.string(forKey: "cloudModel") ?? SpeechModel.seedAudioID
+        let defaultVoice = SpeechModel.allowsAutomaticVoice(model) ? "" : "Zephyr"
+        return (model, defaults.string(forKey: "cloudVoice") ?? defaultVoice)
     }
 
     func saveKey() {
@@ -68,6 +70,7 @@ final class SpeechSettings: ObservableObject {
     }
 
     var availableVoices: [String] { models.first(where: { $0.id == model })?.supportedVoices ?? [] }
+    var allowsAutomaticVoice: Bool { SpeechModel.allowsAutomaticVoice(model) }
 
     func refreshModels() async {
         loadingModels = true
@@ -80,10 +83,29 @@ final class SpeechSettings: ObservableObject {
         } catch { message = error.localizedDescription }
     }
 
+    var narrationVoice: String {
+        switch provider {
+        case .mac: return "Mac voice"
+        case .openRouter: return voice.isEmpty ? "Automatic" : voice
+        case .local: return "Kokoro · \(localVoice)"
+        }
+    }
+
     func configuration(preview: Bool = false) throws -> CloudConfiguration {
+        if provider == .local {
+            guard LocalKokoro.shared.isReady, !LocalKokoro.shared.isInstalling else {
+                throw LocalKokoro.failure("Download and prepare Kokoro in Reading settings first.")
+            }
+            guard LocalKokoro.shared.voices.contains(localVoice) else {
+                throw LocalKokoro.failure("Choose an installed Kokoro voice in Reading settings.")
+            }
+            return CloudConfiguration(key: "", model: "local/kokoro-82m", voice: localVoice,
+                                      timingModel: "", alignWords: wordHighlighting && !preview,
+                                      timingMode: .estimated, highlightGranularity: highlightGranularity, isLocal: true)
+        }
         let selectedModel = model.trimmingCharacters(in: .whitespacesAndNewlines)
         let selectedVoice = voice.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !selectedModel.isEmpty, !selectedVoice.isEmpty else { throw CloudSpeechError.message("Choose a speech model and enter a supported voice in Settings.") }
+        guard !selectedModel.isEmpty, !selectedVoice.isEmpty || SpeechModel.allowsAutomaticVoice(selectedModel) else { throw CloudSpeechError.message("Choose a speech model and enter a supported voice in Settings.") }
         if let entry = models.first(where: { $0.id == selectedModel }),
            let problem = Self.unsupportedVoiceMessage(model: selectedModel, voice: selectedVoice, entry: entry) {
             throw CloudSpeechError.message(problem)
@@ -107,7 +129,7 @@ final class SpeechSettings: ObservableObject {
 private enum KeychainKey {
     static let query: [String: Any] = [
         kSecClass as String: kSecClassGenericPassword,
-        kSecAttrService as String: "local.leaf.reader.openrouter",
+        kSecAttrService as String: "\(Bundle.main.bundleIdentifier ?? "local.leaf.reader").openrouter",
         kSecAttrAccount as String: "api-key"
     ]
 

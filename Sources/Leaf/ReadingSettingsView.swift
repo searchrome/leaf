@@ -4,6 +4,7 @@ import ReaderCore
 struct ReadingSettingsView: View {
     @ObservedObject var reader: ReaderModel
     @ObservedObject var speech: SpeechSettings
+    @ObservedObject private var local = LocalKokoro.shared
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
@@ -48,13 +49,83 @@ struct ReadingSettingsView: View {
                         }
                     }
                     Divider()
-                    cloudSettings
+                    if speech.provider == .local { localSettings } else { cloudSettings }
                 }.padding(26)
             }
         }
         .frame(width: 560, height: 700)
         .background(Color(red: 0.98, green: 0.97, blue: 0.94))
         .onDisappear { speech.keyDraft = "" }
+    }
+
+    private var localSettings: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text("LOCAL MODEL").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+            Picker("Model", selection: .constant("kokoro")) {
+                Text("Kokoro 82M · English").tag("kokoro")
+            }
+            Label(local.compatibility.message, systemImage: local.compatibility.supported ? "checkmark.circle" : "exclamationmark.circle")
+                .font(.caption).foregroundStyle(.secondary)
+            Text("Free local narration. Setup downloads Kokoro, English voices, and a private speech runtime (allow up to 2 GB of downloads and 4 GB of free disk space). After setup, book text stays on this Mac and narration works offline without an API key.")
+                .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+            if local.isInstalling {
+                HStack(spacing: 10) {
+                    ProgressView().controlSize(.small)
+                    Text(local.stage).font(.caption)
+                    Spacer()
+                    Button("Cancel", action: local.cancelInstall)
+                }
+            } else if local.isReady {
+                Label("Downloaded and ready", systemImage: "checkmark.circle.fill").foregroundStyle(.green)
+                if let report = local.installation {
+                    Text(report.benchmark).font(.caption).foregroundStyle(.secondary)
+                    if report.generationSeconds > report.audioSeconds {
+                        Text("Speech generation was slower than playback on this Mac. You may hear gaps between passages; Mac voices are available for continuous reading.")
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
+                }
+                Picker("Voice", selection: $speech.localVoice) {
+                    ForEach(local.voices, id: \.self) { voice in
+                        Text(voice.replacingOccurrences(of: "_", with: " · ")).tag(voice)
+                    }
+                }.onChange(of: speech.localVoice) { _ in reader.stop() }
+                Toggle("Highlight while reading", isOn: $speech.wordHighlighting).onChange(of: speech.wordHighlighting) { _ in reader.stop() }
+                if speech.wordHighlighting {
+                    Picker("Highlight", selection: $speech.highlightGranularity) {
+                        Text("Word by word").tag(HighlightGranularity.word)
+                        Text("Whole sentences").tag(HighlightGranularity.sentence)
+                    }.onChange(of: speech.highlightGranularity) { _ in reader.stop() }
+                    Text("Word following is estimated locally from the audio and may drift. No online transcription is used.")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+                HStack {
+                    Button(reader.isPreviewing ? "Stop preview" : "Preview local voice") { reader.previewCloudVoice() }
+                    if reader.isPreviewing && reader.preparingCloud { ProgressView().controlSize(.small) }
+                    Spacer()
+                    Button("Remove download", role: .destructive) { reader.stop(); local.remove() }
+                }
+                Button("Repair / check setup") { reader.stop(); local.install() }.font(.caption)
+            } else {
+                Button("Download and prepare Kokoro") { reader.stop(); local.install() }
+                    .disabled(!local.compatibility.supported)
+                if !local.stage.isEmpty { Text(local.stage).font(.caption).foregroundStyle(.secondary) }
+                if local.hasDownload {
+                    Button("Remove partial download", role: .destructive) { reader.stop(); local.remove() }.font(.caption)
+                }
+            }
+            if let error = local.error { Text(error).font(.caption).foregroundStyle(.red).textSelection(.enabled) }
+            if let error = reader.error {
+                Text(error).font(.caption).foregroundStyle(.red)
+                Button("Dismiss message") { reader.error = nil }.font(.caption)
+            }
+            if let notice = reader.cloudNotice { Text(notice).font(.caption).foregroundStyle(.secondary) }
+            HStack {
+                Link("Model · Apache 2.0", destination: URL(string: "https://huggingface.co/hexgrad/Kokoro-82M")!)
+                Link("Runtime · MIT", destination: URL(string: "https://github.com/gabrimatic/kokoro-mlx")!)
+            }.font(.caption)
+            Text("Look Up may still use OpenRouter when macOS Dictionary has no definition and you have saved an API key.")
+                .font(.caption).foregroundStyle(.secondary)
+        }
     }
 
     private var cloudSettings: some View {
@@ -86,13 +157,17 @@ struct ReadingSettingsView: View {
             }
             HStack {
                 Text("Voice").frame(width: 70, alignment: .leading)
-                TextField("Voice name, e.g. Zephyr", text: $speech.voice).textFieldStyle(.roundedBorder)
+                TextField(speech.allowsAutomaticVoice ? "Automatic, or enter a Seed speaker ID" : "Voice name, e.g. Zephyr", text: $speech.voice).textFieldStyle(.roundedBorder)
                 if !speech.availableVoices.isEmpty {
                     Menu("Choose") {
                         ForEach(speech.availableVoices, id: \.self) { voice in Button(voice) { speech.voice = voice } }
                     }.frame(width: 85)
                 }
             }.onChange(of: speech.voice) { _ in reader.stop() }
+            if speech.allowsAutomaticVoice {
+                Text("Leave Voice empty for automatic narration, or enter a Seed speaker ID. OpenRouter does not currently publish narrator names for this model.")
+                    .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+            }
             Toggle("Highlight while reading", isOn: $speech.wordHighlighting)
                 .onChange(of: speech.wordHighlighting) { _ in reader.stop() }
             if speech.wordHighlighting {

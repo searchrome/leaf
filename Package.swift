@@ -10,6 +10,7 @@ let package = Package(
         .executableTarget(
             name: "Leaf",
             dependencies: ["ReaderCore"],
+            resources: [.copy("Resources/LocalKokoro.py"), .copy("Resources/LocalKokoro.requirements.txt")],
             linkerSettings: [.linkedFramework("CoreServices")]
         ),
         .testTarget(name: "ReaderCoreTests", dependencies: ["ReaderCore"]),

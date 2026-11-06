@@ -4,6 +4,39 @@ import ReaderCore
 
 final class CloudNarratorTests: XCTestCase {
     @MainActor
+    func testFreshSpeechSelectionDefaultsToSeedAutomaticVoice() {
+        let defaults = UserDefaults(suiteName: "test-seed-default-selection")!
+        defer { defaults.removePersistentDomain(forName: "test-seed-default-selection") }
+        let selection = SpeechSettings.savedSelection(defaults: defaults)
+        XCTAssertEqual(selection.model, SpeechModel.seedAudioID)
+        XCTAssertEqual(selection.voice, "")
+    }
+
+    @MainActor
+    func testSelectingSeedClearsPreviousVoiceAndAllowsAutomaticNarration() {
+        let settings = SpeechSettings()
+        let previousModel = settings.model
+        let previousVoice = settings.voice
+        defer { settings.model = previousModel; settings.voice = previousVoice }
+        settings.voice = "Zephyr"
+        settings.selectModel(SpeechModel.seedAudioID)
+        XCTAssertTrue(settings.allowsAutomaticVoice)
+        XCTAssertEqual(settings.voice, "")
+        XCTAssertTrue(settings.availableVoices.isEmpty)
+    }
+
+    @MainActor
+    func testSavedGeminiVoiceSurvivesRestart() {
+        let defaults = UserDefaults(suiteName: "test-speech-selection")!
+        defer { defaults.removePersistentDomain(forName: "test-speech-selection") }
+        defaults.set("google/gemini-3.1-flash-tts-preview", forKey: "cloudModel")
+        defaults.set("Umbriel", forKey: "cloudVoice")
+        let selection = SpeechSettings.savedSelection(defaults: defaults)
+        XCTAssertEqual(selection.model, "google/gemini-3.1-flash-tts-preview")
+        XCTAssertEqual(selection.voice, "Umbriel")
+    }
+
+    @MainActor
     func testUnsupportedVoiceIsRejectedBeforeAnyRequest() {
         let qwen = SpeechModel(id: "qwen/qwen-audio-3.0-tts-flash", name: "Qwen Audio 3.0 TTS Flash", supportedVoices: ["longanhuan_v3.6", "loongjohn"])
         let mismatch = SpeechSettings.unsupportedVoiceMessage(model: qwen.id, voice: "Zephyr", entry: qwen)

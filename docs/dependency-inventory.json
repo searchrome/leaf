@@ -1,0 +1,2048 @@
+{
+  "format": 1,
+  "collected_at": "2026-11-06T10:57:17.880685+00:00",
+  "scope": "Installed optional Kokoro runtime; metadata is not a legal license determination",
+  "packages": [
+    {
+      "name": "addict",
+      "version": "2.4.0",
+      "license_expression": null,
+      "license_summary": "UNKNOWN",
+      "license_classifiers": [
+        "License :: OSI Approved :: MIT License"
+      ],
+      "requires": [],
+      "project_urls": []
+    },
+    {
+      "name": "annotated-doc",
+      "version": "0.0.5",
+      "license_expression": "MIT",
+      "license_summary": null,
+      "license_classifiers": [],
+      "requires": [],
+      "project_urls": [
+        "Homepage, https://github.com/fastapi/annotated-doc",
+        "Documentation, https://github.com/fastapi/annotated-doc",
+        "Repository, https://github.com/fastapi/annotated-doc",
+        "Issues, https://github.com/fastapi/annotated-doc/issues",
+        "Changelog, https://github.com/fastapi/annotated-doc/release-notes.md"
+      ]
+    },
+    {
+      "name": "annotated-types",
+      "version": "0.8.0",
+      "license_expression": "MIT",
+      "license_summary": null,
+      "license_classifiers": [
+        "License :: OSI Approved :: MIT License"
+      ],
+      "requires": [],
+      "project_urls": [
+        "Homepage, https://github.com/annotated-types/annotated-types",
+        "Source, https://github.com/annotated-types/annotated-types",
+        "Changelog, https://github.com/annotated-types/annotated-types/releases"
+      ]
+    },
+    {
+      "name": "anyio",
+      "version": "4.15.1",
+      "license_expression": "MIT",
+      "license_summary": null,
+      "license_classifiers": [],
+      "requires": [
+        "exceptiongroup>=1.0.2; python_version < \"3.11\"",
+        "idna>=2.8",
+        "typing_extensions>=4.16.0; python_version < \"3.15\"",
+        "trio>=0.32.0; extra == \"trio\""
+      ],
+      "project_urls": [
+        "Documentation, https://anyio.readthedocs.io/en/latest/",
+        "Changelog, https://anyio.readthedocs.io/en/stable/versionhistory.html",
+        "Source code, https://github.com/agronholm/anyio",
+        "Issue tracker, https://github.com/agronholm/anyio/issues"
+      ]
+    },
+    {
+      "name": "attrs",
+      "version": "26.1.0",
+      "license_expression": "MIT",
+      "license_summary": null,
+      "license_classifiers": [],
+      "requires": [],
+      "project_urls": [
+        "Documentation, https://www.attrs.org/",
+        "Changelog, https://www.attrs.org/en/stable/changelog.html",
+        "GitHub, https://github.com/python-attrs/attrs",
+        "Funding, https://github.com/sponsors/hynek",
+        "Tidelift, https://tidelift.com/subscription/pkg/pypi-attrs?utm_source=pypi-attrs&utm_medium=pypi"
+      ]
+    },
+    {
+      "name": "babel",
+      "version": "2.18.0",
+      "license_expression": null,
+      "license_summary": "BSD-3-Clause",
+      "license_classifiers": [
+        "License :: OSI Approved :: BSD License"
+      ],
+      "requires": [
+        "pytz>=2015.7; python_version < \"3.9\"",
+        "tzdata; sys_platform == \"win32\" and extra == \"dev\"",
+        "backports.zoneinfo; python_version < \"3.9\" and extra == \"dev\"",
+        "freezegun~=1.0; extra == \"dev\"",
+        "jinja2>=3.0; extra == \"dev\"",
+        "pytest-cov; extra == \"dev\"",
+        "pytest>=6.0; extra == \"dev\"",
+        "pytz; extra == \"dev\"",
+        "setuptools; extra == \"dev\""
+      ],
+      "project_urls": [
+        "Source, https://github.com/python-babel/babel"
+      ]
+    },
+    {
+      "name": "blis",
+      "version": "1.3.3",
+      "license_expression": null,
+      "license_summary": "BSD",
+      "license_classifiers": [
+        "License :: OSI Approved :: BSD License"
+      ],
+      "requires": [
+        "numpy<3.0.0,>=1.15.0; python_version < \"3.9\"",
+        "numpy<3.0.0,>=1.19.0; python_version >= \"3.9\""
+      ],
+      "project_urls": []
+    },
+    {
+      "name": "catalogue",
+      "version": "2.0.10",
+      "license_expression": null,
+      "license_summary": "MIT",
+      "license_classifiers": [
+        "License :: OSI Approved :: MIT License"
+      ],
+      "requires": [
+        "zipp >=0.5 ; python_version < \"3.8\"",
+        "typing-extensions >=3.6.4 ; python_version < \"3.8\""
+      ],
+      "project_urls": []
+    },
+    {
+      "name": "certifi",
+      "version": "2026.10.23",
+      "license_expression": null,
+      "license_summary": "MPL-2.0",
+      "license_classifiers": [
+        "License :: OSI Approved :: Mozilla Public License 2.0 (MPL 2.0)"
+      ],
+      "requires": [],
+      "project_urls": [
+        "Source, https://github.com/certifi/python-certifi"
+      ]
+    },
+    {
+      "name": "cffi",
+      "version": "2.1.1",
+      "license_expression": "MIT-0",
+      "license_summary": null,
+      "license_classifiers": [],
+      "requires": [
+        "pycparser; implementation_name != \"PyPy\""
+      ],
+      "project_urls": [
+        "Documentation, https://cffi.readthedocs.io/",
+        "Changelog, https://cffi.readthedocs.io/en/latest/whatsnew.html",
+        "Download, https://github.com/python-cffi/cffi/releases",
+        "Contact, https://groups.google.com/forum/#!forum/python-cffi",
+        "Source Code, https://github.com/python-cffi/cffi",
+        "Issue Tracker, https://github.com/python-cffi/cffi/issues"
+      ]
+    },
+    {
+      "name": "charset-normalizer",
+      "version": "3.5.2",
+      "license_expression": null,
+      "license_summary": "MIT",
+      "license_classifiers": [],
+      "requires": [],
+      "project_urls": [
+        "Changelog, https://github.com/jawah/charset_normalizer/blob/master/CHANGELOG.md",
+        "Documentation, https://charset-normalizer.readthedocs.io/",
+        "Code, https://github.com/jawah/charset_normalizer",
+        "Issue tracker, https://github.com/jawah/charset_normalizer/issues"
+      ]
+    },
+    {
+      "name": "click",
+      "version": "8.5.0",
+      "license_expression": "BSD-3-Clause",
+      "license_summary": null,
+      "license_classifiers": [],
+      "requires": [],
+      "project_urls": [
+        "Changes, https://click.palletsprojects.com/page/changes/",
+        "Chat, https://discord.gg/pallets",
+        "Documentation, https://click.palletsprojects.com/",
+        "Donate, https://palletsprojects.com/donate",
+        "Source, https://github.com/pallets/click/"
+      ]
+    },
+    {
+      "name": "cloudpathlib",
+      "version": "0.26.0",
+      "license_expression": null,
+      "license_summary": null,
+      "license_classifiers": [
+        "License :: OSI Approved :: MIT License"
+      ],
+      "requires": [
+        "typing-extensions>4 ; python_version < '3.11'",
+        "cloudpathlib[azure] ; extra == \"all\"",
+        "cloudpathlib[gs] ; extra == \"all\"",
+        "cloudpathlib[s3] ; extra == \"all\"",
+        "azure-storage-blob>=12 ; extra == \"azure\"",
+        "azure-storage-file-datalake>=12 ; extra == \"azure\"",
+        "google-cloud-storage ; extra == \"gs\"",
+        "boto3>=1.34.0 ; extra == \"s3\""
+      ],
+      "project_urls": [
+        "Bug Tracker, https://github.com/drivendataorg/cloudpathlib/issues",
+        "Changelog, https://cloudpathlib.drivendata.org/stable/changelog/",
+        "Documentation, https://cloudpathlib.drivendata.org/",
+        "Repository, https://github.com/drivendataorg/cloudpathlib"
+      ]
+    },
+    {
+      "name": "cloudpickle",
+      "version": "3.1.2",
+      "license_expression": null,
+      "license_summary": "BSD-3-Clause",
+      "license_classifiers": [
+        "License :: OSI Approved :: BSD License"
+      ],
+      "requires": [],
+      "project_urls": []
+    },
+    {
+      "name": "confection",
+      "version": "1.3.3",
+      "license_expression": null,
+      "license_summary": "MIT",
+      "license_classifiers": [
+        "License :: OSI Approved :: MIT License"
+      ],
+      "requires": [
+        "typing_extensions<5.0,>=4.0; python_version < \"3.11\""
+      ],
+      "project_urls": []
+    },
+    {
+      "name": "csvw",
+      "version": "4.1.1",
+      "license_expression": null,
+      "license_summary": "Apache 2.0",
+      "license_classifiers": [
+        "License :: OSI Approved :: Apache Software License"
+      ],
+      "requires": [
+        "isodate",
+        "python-dateutil",
+        "rfc3986<2",
+        "uritemplate>=3.0.0",
+        "babel",
+        "language-tags",
+        "rdflib",
+        "termcolor",
+        "jsonschema",
+        "flake8; extra == \"dev\"",
+        "wheel; extra == \"dev\"",
+        "twine; extra == \"dev\"",
+        "build; extra == \"dev\"",
+        "sphinx<7; extra == \"docs\"",
+        "sphinx-autodoc-typehints; extra == \"docs\"",
+        "sphinx-rtd-theme; extra == \"docs\"",
+        "frictionless; extra == \"test\"",
+        "pytest>=5; extra == \"test\"",
+        "pytest-mock; extra == \"test\"",
+        "pytest-cov; extra == \"test\""
+      ],
+      "project_urls": [
+        "Bug Tracker, https://github.com/cldf/csvw/issues"
+      ]
+    },
+    {
+      "name": "curated-tokenizers",
+      "version": "0.0.10",
+      "license_expression": null,
+      "license_summary": "MIT",
+      "license_classifiers": [
+        "License :: OSI Approved :: MIT License"
+      ],
+      "requires": [
+        "regex>=2022"
+      ],
+      "project_urls": []
+    },
+    {
+      "name": "curated-transformers",
+      "version": "0.1.1",
+      "license_expression": null,
+      "license_summary": "MIT",
+      "license_classifiers": [],
+      "requires": [
+        "torch (>=1.12.0)"
+      ],
+      "project_urls": []
+    },
+    {
+      "name": "cymem",
+      "version": "2.0.13",
+      "license_expression": null,
+      "license_summary": "MIT",
+      "license_classifiers": [
+        "License :: OSI Approved :: MIT License"
+      ],
+      "requires": [],
+      "project_urls": []
+    },
+    {
+      "name": "dlinfo",
+      "version": "2.0.0",
+      "license_expression": null,
+      "license_summary": "MIT",
+      "license_classifiers": [],
+      "requires": [],
+      "project_urls": []
+    },
+    {
+      "name": "docopt",
+      "version": "0.6.2",
+      "license_expression": null,
+      "license_summary": "MIT",
+      "license_classifiers": [
+        "License :: OSI Approved :: MIT License"
+      ],
+      "requires": [],
+      "project_urls": []
+    },
+    {
+      "name": "en_core_web_sm",
+      "version": "3.8.0",
+      "license_expression": null,
+      "license_summary": "MIT",
+      "license_classifiers": [],
+      "requires": [],
+      "project_urls": []
+    },
+    {
+      "name": "espeakng-loader",
+      "version": "0.2.4",
+      "license_expression": null,
+      "license_summary": null,
+      "license_classifiers": [],
+      "requires": [],
+      "project_urls": []
+    },
+    {
+      "name": "filelock",
+      "version": "4.2.4",
+      "license_expression": "MIT",
+      "license_summary": null,
+      "license_classifiers": [
+        "License :: OSI Approved :: MIT License"
+      ],
+      "requires": [],
+      "project_urls": [
+        "Documentation, https://py-filelock.readthedocs.io",
+        "Homepage, https://github.com/tox-dev/py-filelock",
+        "Source, https://github.com/tox-dev/py-filelock",
+        "Tracker, https://github.com/tox-dev/py-filelock/issues"
+      ]
+    },
+    {
+      "name": "fsspec",
+      "version": "2026.9.0",
+      "license_expression": "BSD-3-Clause",
+      "license_summary": null,
+      "license_classifiers": [],
+      "requires": [
+        "adlfs; extra == 'abfs'",
+        "adlfs; extra == 'adl'",
+        "pyarrow>=1; extra == 'arrow'",
+        "dask; extra == 'dask'",
+        "distributed; extra == 'dask'",
+        "pre-commit; extra == 'dev'",
+        "ruff>=0.5; extra == 'dev'",
+        "numpydoc; extra == 'doc'",
+        "sphinx; extra == 'doc'",
+        "sphinx-design; extra == 'doc'",
+        "sphinx-rtd-theme; extra == 'doc'",
+        "yarl; extra == 'doc'",
+        "dropbox; extra == 'dropbox'",
+        "dropboxdrivefs; extra == 'dropbox'",
+        "requests; extra == 'dropbox'",
+        "adlfs; extra == 'full'",
+        "aiohttp!=4.0.0a0,!=4.0.0a1; extra == 'full'",
+        "dask; extra == 'full'",
+        "distributed; extra == 'full'",
+        "dropbox; extra == 'full'",
+        "dropboxdrivefs; extra == 'full'",
+        "fusepy; extra == 'full'",
+        "gcsfs>=2026.4.0; extra == 'full'",
+        "libarchive-c; extra == 'full'",
+        "ocifs; extra == 'full'",
+        "panel; extra == 'full'",
+        "paramiko; extra == 'full'",
+        "pyarrow>=1; extra == 'full'",
+        "pygit2; extra == 'full'",
+        "requests; extra == 'full'",
+        "s3fs>=2026.6.0; extra == 'full'",
+        "smbprotocol; extra == 'full'",
+        "tqdm; extra == 'full'",
+        "fusepy; extra == 'fuse'",
+        "gcsfs>=2026.4.0; extra == 'gcs'",
+        "pygit2; extra == 'git'",
+        "requests; extra == 'github'",
+        "gcsfs>=2026.4.0; extra == 'gs'",
+        "panel; extra == 'gui'",
+        "pyarrow>=1; extra == 'hdfs'",
+        "aiohttp!=4.0.0a0,!=4.0.0a1; extra == 'http'",
+        "libarchive-c; extra == 'libarchive'",
+        "ocifs; extra == 'oci'",
+        "s3fs>=2026.6.0; extra == 's3'",
+        "paramiko; extra == 'sftp'",
+        "smbprotocol; extra == 'smb'",
+        "paramiko; extra == 'ssh'",
+        "aiohttp!=4.0.0a0,!=4.0.0a1; extra == 'test'",
+        "numpy; extra == 'test'",
+        "pytest; extra == 'test'",
+        "pytest-asyncio!=0.22.0; extra == 'test'",
+        "pytest-benchmark; extra == 'test'",
+        "pytest-cov; extra == 'test'",
+        "pytest-mock; extra == 'test'",
+        "pytest-recording; extra == 'test'",
+        "pytest-rerunfailures; extra == 'test'",
+        "requests; extra == 'test'",
+        "aiobotocore<3.0.0,>=2.5.4; extra == 'test-downstream'",
+        "dask[dataframe,test]; extra == 'test-downstream'",
+        "moto[server]<5,>4; extra == 'test-downstream'",
+        "pytest-timeout; extra == 'test-downstream'",
+        "xarray; extra == 'test-downstream'",
+        "zarr; extra == 'test-downstream'",
+        "adlfs; extra == 'test-full'",
+        "aiohttp!=4.0.0a0,!=4.0.0a1; extra == 'test-full'",
+        "backports-zstd; (python_version < '3.14') and extra == 'test-full'",
+        "cloudpickle; extra == 'test-full'",
+        "dask; extra == 'test-full'",
+        "distributed; extra == 'test-full'",
+        "dropbox; extra == 'test-full'",
+        "dropboxdrivefs; extra == 'test-full'",
+        "fastparquet; extra == 'test-full'",
+        "fusepy; extra == 'test-full'",
+        "gcsfs>=2026.4.0; extra == 'test-full'",
+        "jinja2; extra == 'test-full'",
+        "kerchunk; extra == 'test-full'",
+        "libarchive-c; extra == 'test-full'",
+        "lz4; extra == 'test-full'",
+        "notebook; extra == 'test-full'",
+        "numpy; extra == 'test-full'",
+        "ocifs; extra == 'test-full'",
+        "pandas<3.0.0; extra == 'test-full'",
+        "panel; extra == 'test-full'",
+        "paramiko; extra == 'test-full'",
+        "pyarrow>=1; extra == 'test-full'",
+        "pyftpdlib; extra == 'test-full'",
+        "pygit2; extra == 'test-full'",
+        "pytest; extra == 'test-full'",
+        "pytest-asyncio!=0.22.0; extra == 'test-full'",
+        "pytest-benchmark; extra == 'test-full'",
+        "pytest-cov; extra == 'test-full'",
+        "pytest-mock; extra == 'test-full'",
+        "pytest-recording; extra == 'test-full'",
+        "pytest-rerunfailures; extra == 'test-full'",
+        "python-snappy; extra == 'test-full'",
+        "requests; extra == 'test-full'",
+        "s3fs>=2026.6.0; extra == 'test-full'",
+        "smbprotocol; extra == 'test-full'",
+        "tqdm; extra == 'test-full'",
+        "urllib3; extra == 'test-full'",
+        "zarr<3.2.0; extra == 'test-full'",
+        "zstandard; (python_version < '3.14') and extra == 'test-full'",
+        "tqdm; extra == 'tqdm'"
+      ],
+      "project_urls": [
+        "Changelog, https://filesystem-spec.readthedocs.io/en/latest/changelog.html",
+        "Documentation, https://filesystem-spec.readthedocs.io/en/latest/",
+        "Homepage, https://github.com/fsspec/filesystem_spec"
+      ]
+    },
+    {
+      "name": "h11",
+      "version": "0.16.0",
+      "license_expression": null,
+      "license_summary": "MIT",
+      "license_classifiers": [
+        "License :: OSI Approved :: MIT License"
+      ],
+      "requires": [],
+      "project_urls": []
+    },
+    {
+      "name": "hf-xet",
+      "version": "1.7.0",
+      "license_expression": "Apache-2.0",
+      "license_summary": null,
+      "license_classifiers": [
+        "License :: OSI Approved :: Apache Software License"
+      ],
+      "requires": [
+        "pytest ; extra == 'tests'"
+      ],
+      "project_urls": [
+        "Documentation, https://huggingface.co/docs/hub/xet/index",
+        "Homepage, https://github.com/huggingface/xet-core",
+        "Issues, https://github.com/huggingface/xet-core/issues",
+        "Repository, https://github.com/huggingface/xet-core.git"
+      ]
+    },
+    {
+      "name": "httpcore",
+      "version": "1.0.9",
+      "license_expression": "BSD-3-Clause",
+      "license_summary": null,
+      "license_classifiers": [
+        "License :: OSI Approved :: BSD License"
+      ],
+      "requires": [
+        "certifi",
+        "h11>=0.16",
+        "anyio<5.0,>=4.0; extra == 'asyncio'",
+        "h2<5,>=3; extra == 'http2'",
+        "socksio==1.*; extra == 'socks'",
+        "trio<1.0,>=0.22.0; extra == 'trio'"
+      ],
+      "project_urls": [
+        "Documentation, https://www.encode.io/httpcore",
+        "Homepage, https://www.encode.io/httpcore/",
+        "Source, https://github.com/encode/httpcore"
+      ]
+    },
+    {
+      "name": "httpcore2",
+      "version": "2.16.0",
+      "license_expression": "BSD-3-Clause",
+      "license_summary": null,
+      "license_classifiers": [
+        "License :: OSI Approved :: BSD License"
+      ],
+      "requires": [
+        "h11>=0.16",
+        "truststore>=0.10",
+        "anyio<5.0,>=4.5.0; extra == 'asyncio'",
+        "h2<5,>=3; extra == 'http2'",
+        "socksio==1.*; extra == 'socks'",
+        "trio<1.0,>=0.34.0; extra == 'trio'"
+      ],
+      "project_urls": [
+        "Changelog, https://github.com/pydantic/httpx2/blob/main/src/httpcore2/CHANGELOG.md",
+        "Homepage, https://github.com/pydantic/httpx2",
+        "Source, https://github.com/pydantic/httpx2/blob/main/src/httpcore2"
+      ]
+    },
+    {
+      "name": "httpx",
+      "version": "0.28.1",
+      "license_expression": null,
+      "license_summary": "BSD-3-Clause",
+      "license_classifiers": [
+        "License :: OSI Approved :: BSD License"
+      ],
+      "requires": [
+        "anyio",
+        "certifi",
+        "httpcore==1.*",
+        "idna",
+        "brotli; (platform_python_implementation == 'CPython') and extra == 'brotli'",
+        "brotlicffi; (platform_python_implementation != 'CPython') and extra == 'brotli'",
+        "click==8.*; extra == 'cli'",
+        "pygments==2.*; extra == 'cli'",
+        "rich<14,>=10; extra == 'cli'",
+        "h2<5,>=3; extra == 'http2'",
+        "socksio==1.*; extra == 'socks'",
+        "zstandard>=0.18.0; extra == 'zstd'"
+      ],
+      "project_urls": [
+        "Changelog, https://github.com/encode/httpx/blob/master/CHANGELOG.md",
+        "Documentation, https://www.python-httpx.org",
+        "Homepage, https://github.com/encode/httpx",
+        "Source, https://github.com/encode/httpx"
+      ]
+    },
+    {
+      "name": "httpx2",
+      "version": "2.16.0",
+      "license_expression": "BSD-3-Clause",
+      "license_summary": null,
+      "license_classifiers": [
+        "License :: OSI Approved :: BSD License"
+      ],
+      "requires": [
+        "anyio>=4.10; sys_platform != 'emscripten'",
+        "httpcore2==2.16.0; sys_platform != 'emscripten'",
+        "httpx2-jsfetch; sys_platform == 'emscripten' and python_version >= '3.12'",
+        "idna>=3.18",
+        "truststore>=0.10; sys_platform != 'emscripten'",
+        "typing-extensions>=4.5.0; python_version < '3.13'",
+        "brotli>=1.2.0; (platform_python_implementation == 'CPython') and extra == 'brotli'",
+        "brotlicffi>=1.2.0.2; (platform_python_implementation != 'CPython') and extra == 'brotli'",
+        "click>=8.4.2; extra == 'cli'",
+        "pygments==2.*; extra == 'cli'",
+        "rich<16,>=10; extra == 'cli'",
+        "h2<5,>=3; extra == 'http2'",
+        "socksio==1.*; extra == 'socks'",
+        "wsproto>=1.2; extra == 'ws'",
+        "backports-zstd>=1.0.0; (python_version <= '3.13') and extra == 'zstd'"
+      ],
+      "project_urls": [
+        "Changelog, https://github.com/pydantic/httpx2/blob/main/src/httpx2/CHANGELOG.md",
+        "Homepage, https://github.com/pydantic/httpx2",
+        "Source, https://github.com/pydantic/httpx2"
+      ]
+    },
+    {
+      "name": "huggingface_hub",
+      "version": "2.3.0",
+      "license_expression": null,
+      "license_summary": "Apache-2.0",
+      "license_classifiers": [
+        "License :: OSI Approved :: Apache Software License"
+      ],
+      "requires": [
+        "click<9.0.0,>=8.4.2",
+        "filelock>=3.10.0",
+        "fsspec>=2023.5.0",
+        "hf-xet<2.0.0,>=1.6.0; platform_machine == \"x86_64\" or platform_machine == \"amd64\" or platform_machine == \"AMD64\" or platform_machine == \"arm64\" or platform_machine == \"ARM64\" or platform_machine == \"aarch64\"",
+        "httpx2<3,>=2.0.0",
+        "packaging>=20.9",
+        "pyyaml>=5.1",
+        "tomli>=1.1.0; python_version < \"3.11\"",
+        "tqdm>=4.42.1",
+        "typing-extensions>=4.1.0",
+        "authlib>=1.8.0; extra == \"oauth\"",
+        "fastapi; extra == \"oauth\"",
+        "itsdangerous; extra == \"oauth\"",
+        "torch; extra == \"torch\"",
+        "safetensors[torch]; extra == \"torch\"",
+        "toml; extra == \"fastai\"",
+        "fastai>=2.4; extra == \"fastai\"",
+        "fastcore>=1.3.27; extra == \"fastai\"",
+        "hf-xet<2.0.0,>=1.6.0; extra == \"hf-xet\"",
+        "mcp<2.0.0,>=1.9.4; extra == \"mcp\"",
+        "authlib>=1.8.0; extra == \"testing\"",
+        "fastapi; extra == \"testing\"",
+        "itsdangerous; extra == \"testing\"",
+        "jedi; extra == \"testing\"",
+        "Jinja2; extra == \"testing\"",
+        "pytest>=8.4.2; extra == \"testing\"",
+        "pytest-cov; extra == \"testing\"",
+        "pytest-env; extra == \"testing\"",
+        "pytest-xdist; extra == \"testing\"",
+        "pytest-vcr; extra == \"testing\"",
+        "pytest-asyncio; extra == \"testing\"",
+        "pytest-rerunfailures>=16.2; extra == \"testing\"",
+        "pytest-mock; extra == \"testing\"",
+        "urllib3<2.0; extra == \"testing\"",
+        "soundfile; extra == \"testing\"",
+        "Pillow; extra == \"testing\"",
+        "numpy; extra == \"testing\"",
+        "duckdb; python_version < \"3.15\" and extra == \"testing\"",
+        "fastapi; extra == \"testing\"",
+        "gradio>=5.0.0; extra == \"gradio\"",
+        "requests; extra == \"gradio\"",
+        "typing-extensions>=4.8.0; extra == \"typing\"",
+        "types-PyYAML; extra == \"typing\"",
+        "types-simplejson; extra == \"typing\"",
+        "types-toml; extra == \"typing\"",
+        "types-tqdm; extra == \"typing\"",
+        "types-urllib3; extra == \"typing\"",
+        "ruff>=0.9.0; extra == \"quality\"",
+        "mypy==1.15.0; extra == \"quality\"",
+        "libcst>=1.4.0; extra == \"quality\"",
+        "ty; extra == \"quality\"",
+        "authlib>=1.8.0; extra == \"all\"",
+        "fastapi; extra == \"all\"",
+        "itsdangerous; extra == \"all\"",
+        "jedi; extra == \"all\"",
+        "Jinja2; extra == \"all\"",
+        "pytest>=8.4.2; extra == \"all\"",
+        "pytest-cov; extra == \"all\"",
+        "pytest-env; extra == \"all\"",
+        "pytest-xdist; extra == \"all\"",
+        "pytest-vcr; extra == \"all\"",
+        "pytest-asyncio; extra == \"all\"",
+        "pytest-rerunfailures>=16.2; extra == \"all\"",
+        "pytest-mock; extra == \"all\"",
+        "urllib3<2.0; extra == \"all\"",
+        "soundfile; extra == \"all\"",
+        "Pillow; extra == \"all\"",
+        "numpy; extra == \"all\"",
+        "duckdb; python_version < \"3.15\" and extra == \"all\"",
+        "fastapi; extra == \"all\"",
+        "ruff>=0.9.0; extra == \"all\"",
+        "mypy==1.15.0; extra == \"all\"",
+        "libcst>=1.4.0; extra == \"all\"",
+        "ty; extra == \"all\"",
+        "typing-extensions>=4.8.0; extra == \"all\"",
+        "types-PyYAML; extra == \"all\"",
+        "types-simplejson; extra == \"all\"",
+        "types-toml; extra == \"all\"",
+        "types-tqdm; extra == \"all\"",
+        "types-urllib3; extra == \"all\"",
+        "authlib>=1.8.0; extra == \"dev\"",
+        "fastapi; extra == \"dev\"",
+        "itsdangerous; extra == \"dev\"",
+        "jedi; extra == \"dev\"",
+        "Jinja2; extra == \"dev\"",
+        "pytest>=8.4.2; extra == \"dev\"",
+        "pytest-cov; extra == \"dev\"",
+        "pytest-env; extra == \"dev\"",
+        "pytest-xdist; extra == \"dev\"",
+        "pytest-vcr; extra == \"dev\"",
+        "pytest-asyncio; extra == \"dev\"",
+        "pytest-rerunfailures>=16.2; extra == \"dev\"",
+        "pytest-mock; extra == \"dev\"",
+        "urllib3<2.0; extra == \"dev\"",
+        "soundfile; extra == \"dev\"",
+        "Pillow; extra == \"dev\"",
+        "numpy; extra == \"dev\"",
+        "duckdb; python_version < \"3.15\" and extra == \"dev\"",
+        "fastapi; extra == \"dev\"",
+        "ruff>=0.9.0; extra == \"dev\"",
+        "mypy==1.15.0; extra == \"dev\"",
+        "libcst>=1.4.0; extra == \"dev\"",
+        "ty; extra == \"dev\"",
+        "typing-extensions>=4.8.0; extra == \"dev\"",
+        "types-PyYAML; extra == \"dev\"",
+        "types-simplejson; extra == \"dev\"",
+        "types-toml; extra == \"dev\"",
+        "types-tqdm; extra == \"dev\"",
+        "types-urllib3; extra == \"dev\""
+      ],
+      "project_urls": []
+    },
+    {
+      "name": "idna",
+      "version": "3.20",
+      "license_expression": "BSD-3-Clause",
+      "license_summary": null,
+      "license_classifiers": [],
+      "requires": [
+        "ruff >= 0.16.0 ; extra == \"all\"",
+        "mypy >= 1.11.2 ; extra == \"all\"",
+        "ty >= 0.0.37 ; extra == \"all\"",
+        "pytest >= 8.3.2 ; extra == \"all\"",
+        "hypothesis >= 6.141.1 ; extra == \"all\"",
+        "coverage >= 7.10.0 ; extra == \"all\""
+      ],
+      "project_urls": [
+        "Changelog, https://github.com/kjd/idna/blob/master/HISTORY.md",
+        "Issue tracker, https://github.com/kjd/idna/issues",
+        "Source, https://github.com/kjd/idna"
+      ]
+    },
+    {
+      "name": "isodate",
+      "version": "0.7.2",
+      "license_expression": null,
+      "license_summary": "Copyright (c) 2021, Hugo van Kemenade and contributors",
+      "license_classifiers": [
+        "License :: OSI Approved :: BSD License"
+      ],
+      "requires": [],
+      "project_urls": [
+        "Homepage, https://github.com/gweis/isodate/"
+      ]
+    },
+    {
+      "name": "Jinja2",
+      "version": "3.1.6",
+      "license_expression": null,
+      "license_summary": null,
+      "license_classifiers": [
+        "License :: OSI Approved :: BSD License"
+      ],
+      "requires": [
+        "MarkupSafe>=2.0",
+        "Babel>=2.7 ; extra == \"i18n\""
+      ],
+      "project_urls": [
+        "Changes, https://jinja.palletsprojects.com/changes/",
+        "Chat, https://discord.gg/pallets",
+        "Documentation, https://jinja.palletsprojects.com/",
+        "Donate, https://palletsprojects.com/donate",
+        "Source, https://github.com/pallets/jinja/"
+      ]
+    },
+    {
+      "name": "joblib",
+      "version": "1.6.0",
+      "license_expression": "BSD-3-Clause",
+      "license_summary": null,
+      "license_classifiers": [],
+      "requires": [
+        "cloudpickle>=3.0",
+        "distributed; extra == \"test\"",
+        "lz4; extra == \"test\"",
+        "numpy; extra == \"test\"",
+        "memory_profiler; extra == \"test\"",
+        "pytest; extra == \"test\"",
+        "pytest-asyncio; extra == \"test\"",
+        "pytest-cov; extra == \"test\"",
+        "pytest-run-parallel; extra == \"test\"",
+        "pytest-timeout; extra == \"test\"",
+        "threadpoolctl; extra == \"test\"",
+        "distributed; extra == \"docs\"",
+        "lz4; extra == \"docs\"",
+        "numpy; extra == \"docs\"",
+        "numpydoc; extra == \"docs\"",
+        "matplotlib; extra == \"docs\"",
+        "pandas; extra == \"docs\"",
+        "psutil; extra == \"docs\"",
+        "sphinx; extra == \"docs\"",
+        "pydata-sphinx-theme; extra == \"docs\"",
+        "sphinx-gallery; extra == \"docs\"",
+        "sphinx-copybutton; extra == \"docs\"",
+        "sphinx-design; extra == \"docs\"",
+        "tqdm; extra == \"docs\""
+      ],
+      "project_urls": [
+        "Homepage, https://joblib.readthedocs.io",
+        "Source, https://github.com/joblib/joblib"
+      ]
+    },
+    {
+      "name": "jsonschema",
+      "version": "4.26.0",
+      "license_expression": "MIT",
+      "license_summary": null,
+      "license_classifiers": [],
+      "requires": [
+        "attrs>=22.2.0",
+        "jsonschema-specifications>=2023.03.6",
+        "referencing>=0.28.4",
+        "rpds-py>=0.25.0",
+        "fqdn; extra == 'format'",
+        "idna; extra == 'format'",
+        "isoduration; extra == 'format'",
+        "jsonpointer>1.13; extra == 'format'",
+        "rfc3339-validator; extra == 'format'",
+        "rfc3987; extra == 'format'",
+        "uri-template; extra == 'format'",
+        "webcolors>=1.11; extra == 'format'",
+        "fqdn; extra == 'format-nongpl'",
+        "idna; extra == 'format-nongpl'",
+        "isoduration; extra == 'format-nongpl'",
+        "jsonpointer>1.13; extra == 'format-nongpl'",
+        "rfc3339-validator; extra == 'format-nongpl'",
+        "rfc3986-validator>0.1.0; extra == 'format-nongpl'",
+        "rfc3987-syntax>=1.1.0; extra == 'format-nongpl'",
+        "uri-template; extra == 'format-nongpl'",
+        "webcolors>=24.6.0; extra == 'format-nongpl'"
+      ],
+      "project_urls": [
+        "Homepage, https://github.com/python-jsonschema/jsonschema",
+        "Documentation, https://python-jsonschema.readthedocs.io/",
+        "Issues, https://github.com/python-jsonschema/jsonschema/issues/",
+        "Funding, https://github.com/sponsors/Julian",
+        "Tidelift, https://tidelift.com/subscription/pkg/pypi-jsonschema?utm_source=pypi-jsonschema&utm_medium=referral&utm_campaign=pypi-link",
+        "Changelog, https://github.com/python-jsonschema/jsonschema/blob/main/CHANGELOG.rst",
+        "Source, https://github.com/python-jsonschema/jsonschema"
+      ]
+    },
+    {
+      "name": "jsonschema-specifications",
+      "version": "2025.9.1",
+      "license_expression": "MIT",
+      "license_summary": null,
+      "license_classifiers": [],
+      "requires": [
+        "referencing>=0.31.0"
+      ],
+      "project_urls": [
+        "Documentation, https://jsonschema-specifications.readthedocs.io/",
+        "Homepage, https://github.com/python-jsonschema/jsonschema-specifications",
+        "Issues, https://github.com/python-jsonschema/jsonschema-specifications/issues/",
+        "Funding, https://github.com/sponsors/Julian",
+        "Tidelift, https://tidelift.com/subscription/pkg/pypi-jsonschema-specifications?utm_source=pypi-jsonschema-specifications&utm_medium=referral&utm_campaign=pypi-link",
+        "Source, https://github.com/python-jsonschema/jsonschema-specifications"
+      ]
+    },
+    {
+      "name": "kokoro-mlx",
+      "version": "0.1.4",
+      "license_expression": "MIT",
+      "license_summary": null,
+      "license_classifiers": [],
+      "requires": [
+        "huggingface-hub>=1.0.0",
+        "misaki[en]>=0.9.4",
+        "mlx>=0.32.4",
+        "numpy>=1.26.4",
+        "soundfile>=0.14.0",
+        "sounddevice>=0.5.6; extra == 'audio'",
+        "pytest>=9.1.1; extra == 'dev'",
+        "ruff>=0.17.0; extra == 'dev'",
+        "misaki[ja]>=0.9.4; extra == 'ja'",
+        "misaki[ja,zh]>=0.9.4; extra == 'multilingual'",
+        "misaki[zh]>=0.9.4; extra == 'zh'"
+      ],
+      "project_urls": [
+        "Homepage, https://github.com/gabrimatic/kokoro-mlx",
+        "Repository, https://github.com/gabrimatic/kokoro-mlx",
+        "Bug Tracker, https://github.com/gabrimatic/kokoro-mlx/issues",
+        "Changelog, https://github.com/gabrimatic/kokoro-mlx/releases"
+      ]
+    },
+    {
+      "name": "language-tags",
+      "version": "1.3.1",
+      "license_expression": "MIT",
+      "license_summary": null,
+      "license_classifiers": [],
+      "requires": [
+        "pytest-cov==5.0.0; extra == 'dev'",
+        "pytest==8.3.3; extra == 'dev'",
+        "sphinx==6.1.2; extra == 'dev'",
+        "uv==0.4.1; extra == 'dev'"
+      ],
+      "project_urls": [
+        "History, https://github.com/OnroerendErfgoed/language-tags/blob/master/HISTORY.rst",
+        "Tracker, https://github.com/OnroerendErfgoed/language-tags/issues",
+        "Source, https://github.com/OnroerendErfgoed/language-tags",
+        "Documentation, https://language-tags.readthedocs.io/en/latest/"
+      ]
+    },
+    {
+      "name": "markdown-it-py",
+      "version": "4.2.0",
+      "license_expression": null,
+      "license_summary": null,
+      "license_classifiers": [
+        "License :: OSI Approved :: MIT License"
+      ],
+      "requires": [
+        "mdurl~=0.1",
+        "psutil ; extra == \"benchmarking\"",
+        "pytest ; extra == \"benchmarking\"",
+        "pytest-benchmark ; extra == \"benchmarking\"",
+        "commonmark~=0.9 ; extra == \"compare\"",
+        "markdown~=3.4 ; extra == \"compare\"",
+        "mistletoe~=1.0 ; extra == \"compare\"",
+        "mistune~=3.0 ; extra == \"compare\"",
+        "panflute~=2.3 ; extra == \"compare\"",
+        "markdown-it-pyrs ; extra == \"compare\"",
+        "linkify-it-py>=1,<3 ; extra == \"linkify\"",
+        "mdit-py-plugins>=0.5.0 ; extra == \"plugins\"",
+        "gprof2dot ; extra == \"profiling\"",
+        "mdit-py-plugins>=0.5.0 ; extra == \"rtd\"",
+        "myst-parser ; extra == \"rtd\"",
+        "pyyaml ; extra == \"rtd\"",
+        "sphinx ; extra == \"rtd\"",
+        "sphinx-copybutton ; extra == \"rtd\"",
+        "sphinx-design ; extra == \"rtd\"",
+        "sphinx-book-theme~=1.0 ; extra == \"rtd\"",
+        "jupyter_sphinx ; extra == \"rtd\"",
+        "ipykernel ; extra == \"rtd\"",
+        "coverage ; extra == \"testing\"",
+        "pytest ; extra == \"testing\"",
+        "pytest-cov ; extra == \"testing\"",
+        "pytest-regressions ; extra == \"testing\"",
+        "pytest-timeout ; extra == \"testing\"",
+        "requests ; extra == \"testing\""
+      ],
+      "project_urls": [
+        "Documentation, https://markdown-it-py.readthedocs.io",
+        "Homepage, https://github.com/executablebooks/markdown-it-py"
+      ]
+    },
+    {
+      "name": "MarkupSafe",
+      "version": "3.0.4",
+      "license_expression": "BSD-3-Clause",
+      "license_summary": null,
+      "license_classifiers": [],
+      "requires": [],
+      "project_urls": [
+        "Donate, https://palletsprojects.com/donate",
+        "Documentation, https://markupsafe.palletsprojects.com/",
+        "Changes, https://markupsafe.palletsprojects.com/page/changes/",
+        "Source, https://github.com/pallets/markupsafe/",
+        "Chat, https://discord.gg/pallets"
+      ]
+    },
+    {
+      "name": "mdurl",
+      "version": "0.1.2",
+      "license_expression": null,
+      "license_summary": null,
+      "license_classifiers": [
+        "License :: OSI Approved :: MIT License"
+      ],
+      "requires": [],
+      "project_urls": [
+        "Homepage, https://github.com/executablebooks/mdurl"
+      ]
+    },
+    {
+      "name": "misaki",
+      "version": "0.9.4",
+      "license_expression": null,
+      "license_summary": "Apache License",
+      "license_classifiers": [
+        "License :: OSI Approved :: Apache Software License"
+      ],
+      "requires": [
+        "addict",
+        "regex",
+        "espeakng-loader; extra == 'en'",
+        "num2words; extra == 'en'",
+        "phonemizer-fork; extra == 'en'",
+        "spacy; extra == 'en'",
+        "spacy-curated-transformers; extra == 'en'",
+        "mishkal-hebrew>=0.3.2; extra == 'he'",
+        "fugashi; extra == 'ja'",
+        "jaconv; extra == 'ja'",
+        "mojimoji; extra == 'ja'",
+        "pyopenjtalk; extra == 'ja'",
+        "unidic; extra == 'ja'",
+        "jamo; extra == 'ko'",
+        "nltk; extra == 'ko'",
+        "num2words; extra == 'vi'",
+        "spacy; extra == 'vi'",
+        "spacy-curated-transformers; extra == 'vi'",
+        "underthesea; extra == 'vi'",
+        "cn2an; extra == 'zh'",
+        "jieba; extra == 'zh'",
+        "ordered-set; extra == 'zh'",
+        "pypinyin; extra == 'zh'",
+        "pypinyin-dict; extra == 'zh'"
+      ],
+      "project_urls": []
+    },
+    {
+      "name": "mlx",
+      "version": "0.32.4",
+      "license_expression": null,
+      "license_summary": "MIT",
+      "license_classifiers": [],
+      "requires": [
+        "mlx-metal==0.32.4; platform_system == \"Darwin\"",
+        "ml_dtypes; extra == \"dev\"",
+        "numpy>=2; extra == \"dev\"",
+        "pre-commit; extra == \"dev\"",
+        "torch>=2.9; extra == \"dev\"",
+        "typing_extensions; extra == \"dev\"",
+        "mlx-cuda-12==0.32.4; platform_system == \"Linux\" and extra == \"cuda\"",
+        "mlx-cuda-12==0.32.4; platform_system == \"Linux\" and extra == \"cuda12\"",
+        "mlx-cuda-13==0.32.4; platform_system == \"Linux\" and extra == \"cuda13\"",
+        "mlx-cpu==0.32.4; platform_system == \"Linux\" and extra == \"cpu\""
+      ],
+      "project_urls": []
+    },
+    {
+      "name": "mlx-metal",
+      "version": "0.32.4",
+      "license_expression": null,
+      "license_summary": "MIT",
+      "license_classifiers": [],
+      "requires": [],
+      "project_urls": []
+    },
+    {
+      "name": "mpmath",
+      "version": "1.3.0",
+      "license_expression": null,
+      "license_summary": "BSD",
+      "license_classifiers": [
+        "License :: OSI Approved :: BSD License"
+      ],
+      "requires": [
+        "pytest (>=4.6) ; extra == 'develop'",
+        "pycodestyle ; extra == 'develop'",
+        "pytest-cov ; extra == 'develop'",
+        "codecov ; extra == 'develop'",
+        "wheel ; extra == 'develop'",
+        "sphinx ; extra == 'docs'",
+        "gmpy2 (>=2.1.0a4) ; (platform_python_implementation != \"PyPy\") and extra == 'gmpy'",
+        "pytest (>=4.6) ; extra == 'tests'"
+      ],
+      "project_urls": [
+        "Source, https://github.com/fredrik-johansson/mpmath",
+        "Tracker, https://github.com/fredrik-johansson/mpmath/issues",
+        "Documentation, http://mpmath.org/doc/current/"
+      ]
+    },
+    {
+      "name": "murmurhash",
+      "version": "1.0.15",
+      "license_expression": null,
+      "license_summary": "MIT",
+      "license_classifiers": [
+        "License :: OSI Approved :: MIT License"
+      ],
+      "requires": [],
+      "project_urls": []
+    },
+    {
+      "name": "networkx",
+      "version": "3.7",
+      "license_expression": "BSD-3-Clause",
+      "license_summary": null,
+      "license_classifiers": [],
+      "requires": [
+        "asv>=0.6.5; extra == \"benchmarking\"",
+        "py-rattler<0.22,>=0.21; extra == \"benchmarking\"",
+        "virtualenv; extra == \"benchmarking\"",
+        "numpy>=2.2; extra == \"default\"",
+        "scipy>=1.15; extra == \"default\"",
+        "matplotlib>=3.10; extra == \"default\"",
+        "pandas>=2.3; extra == \"default\"",
+        "pre-commit>=4.1; extra == \"developer\"",
+        "mypy>=1.15; extra == \"developer\"",
+        "sphinx>=8.0; extra == \"doc\"",
+        "pydata-sphinx-theme>=0.16; extra == \"doc\"",
+        "sphinx-gallery>=0.18; extra == \"doc\"",
+        "numpydoc>=1.8.0; extra == \"doc\"",
+        "pillow>=10; extra == \"doc\"",
+        "texext>=0.6.7; extra == \"doc\"",
+        "myst-nb>=1.1; extra == \"doc\"",
+        "intersphinx-registry; extra == \"doc\"",
+        "osmnx>=2.0.0; extra == \"example\"",
+        "momepy>=0.7.2; extra == \"example\"",
+        "contextily>=1.6; extra == \"example\"",
+        "seaborn>=0.13; extra == \"example\"",
+        "cairocffi>=1.7; extra == \"example\"",
+        "igraph>=0.11; extra == \"example\"",
+        "scikit-learn>=1.6; extra == \"example\"",
+        "iplotx>=0.9.0; extra == \"example\"",
+        "hiveplotlib>=0.28; extra == \"example\"",
+        "lxml>=4.6; extra == \"extra\"",
+        "pygraphviz>=2.0; extra == \"extra\"",
+        "pydot>=3.0.1; extra == \"extra\"",
+        "sympy>=1.10; extra == \"extra\"",
+        "build>=0.10; extra == \"release\"",
+        "twine>=4.0; extra == \"release\"",
+        "wheel>=0.40; extra == \"release\"",
+        "changelist==0.5; extra == \"release\"",
+        "pytest>=7.2; extra == \"test\"",
+        "pytest-cov>=4.0; extra == \"test\"",
+        "pytest-xdist>=3.0; extra == \"test\"",
+        "pytest-mpl; extra == \"test-extras\"",
+        "pytest-randomly; extra == \"test-extras\""
+      ],
+      "project_urls": [
+        "Homepage, https://networkx.org/",
+        "Bug Tracker, https://github.com/networkx/networkx/issues",
+        "Documentation, https://networkx.org/documentation/stable/",
+        "Source Code, https://github.com/networkx/networkx"
+      ]
+    },
+    {
+      "name": "num2words",
+      "version": "0.5.14",
+      "license_expression": null,
+      "license_summary": "LGPL",
+      "license_classifiers": [
+        "License :: OSI Approved :: GNU Library or Lesser General Public License (LGPL)"
+      ],
+      "requires": [
+        "docopt>=0.6.2"
+      ],
+      "project_urls": []
+    },
+    {
+      "name": "numpy",
+      "version": "2.5.4",
+      "license_expression": "BSD-3-Clause AND 0BSD AND MIT AND Zlib AND CC0-1.0",
+      "license_summary": null,
+      "license_classifiers": [],
+      "requires": [],
+      "project_urls": [
+        "homepage, https://numpy.org",
+        "documentation, https://numpy.org/doc/",
+        "source, https://github.com/numpy/numpy",
+        "download, https://pypi.org/project/numpy/#files",
+        "tracker, https://github.com/numpy/numpy/issues",
+        "release notes, https://numpy.org/doc/stable/release"
+      ]
+    },
+    {
+      "name": "packaging",
+      "version": "26.3",
+      "license_expression": "Apache-2.0 OR BSD-2-Clause",
+      "license_summary": null,
+      "license_classifiers": [],
+      "requires": [],
+      "project_urls": [
+        "Documentation, https://packaging.pypa.io/",
+        "Source, https://github.com/pypa/packaging"
+      ]
+    },
+    {
+      "name": "phonemizer-fork",
+      "version": "3.3.2",
+      "license_expression": null,
+      "license_summary": "GNU GENERAL PUBLIC LICENSE",
+      "license_classifiers": [
+        "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)"
+      ],
+      "requires": [
+        "attrs>=18.1",
+        "dlinfo",
+        "joblib",
+        "segments",
+        "typing-extensions",
+        "sphinx; extra == 'doc'",
+        "sphinx-rtd-theme; extra == 'doc'",
+        "coverage[toml]; extra == 'test'",
+        "pytest-cov; extra == 'test'",
+        "pytest>=6.0; extra == 'test'"
+      ],
+      "project_urls": [
+        "Documentation, https://bootphon.github.io/phonemizer/",
+        "Repository, https://github.com/bootphon/phonemizer",
+        "Issues, https://github.com/bootphon/phonemizer",
+        "Changelog, https://github.com/bootphon/phonemizer/blob/master/docs/source/changelog.rst"
+      ]
+    },
+    {
+      "name": "preshed",
+      "version": "3.0.13",
+      "license_expression": null,
+      "license_summary": "MIT",
+      "license_classifiers": [
+        "License :: OSI Approved :: MIT License"
+      ],
+      "requires": [
+        "cymem<2.1.0,>=2.0.2",
+        "murmurhash<1.1.0,>=0.28.0"
+      ],
+      "project_urls": []
+    },
+    {
+      "name": "pycparser",
+      "version": "3.12",
+      "license_expression": "BSD-3-Clause",
+      "license_summary": null,
+      "license_classifiers": [],
+      "requires": [],
+      "project_urls": [
+        "Homepage, https://github.com/eliben/pycparser"
+      ]
+    },
+    {
+      "name": "pydantic",
+      "version": "2.14.1",
+      "license_expression": "MIT",
+      "license_summary": null,
+      "license_classifiers": [],
+      "requires": [
+        "annotated-types>=0.6.0",
+        "pydantic-core==2.50.1",
+        "typing-extensions>=4.16.0",
+        "typing-inspection>=0.4.4",
+        "email-validator>=2.0.0; extra == 'email'",
+        "tzdata; (platform_system == 'Windows') and extra == 'timezone'"
+      ],
+      "project_urls": [
+        "Homepage, https://github.com/pydantic/pydantic",
+        "Documentation, https://pydantic.dev/docs/validation/latest/get-started/",
+        "Funding, https://github.com/sponsors/samuelcolvin",
+        "Source, https://github.com/pydantic/pydantic",
+        "Changelog, https://pydantic.dev/docs/validation/latest/get-started/changelog/"
+      ]
+    },
+    {
+      "name": "pydantic_core",
+      "version": "2.50.1",
+      "license_expression": "MIT",
+      "license_summary": null,
+      "license_classifiers": [],
+      "requires": [
+        "typing-extensions>=4.16.0"
+      ],
+      "project_urls": [
+        "Funding, https://github.com/sponsors/samuelcolvin",
+        "Homepage, https://github.com/pydantic",
+        "Source, https://github.com/pydantic/pydantic/tree/main/pydantic-core"
+      ]
+    },
+    {
+      "name": "Pygments",
+      "version": "2.21.0",
+      "license_expression": "BSD-2-Clause",
+      "license_summary": null,
+      "license_classifiers": [],
+      "requires": [
+        "colorama>=0.4.6; extra == 'windows-terminal'"
+      ],
+      "project_urls": [
+        "Homepage, https://pygments.org",
+        "Documentation, https://pygments.org/docs",
+        "Source, https://github.com/pygments/pygments",
+        "Bug Tracker, https://github.com/pygments/pygments/issues",
+        "Changelog, https://github.com/pygments/pygments/blob/master/CHANGES"
+      ]
+    },
+    {
+      "name": "pyparsing",
+      "version": "3.3.3",
+      "license_expression": "MIT",
+      "license_summary": null,
+      "license_classifiers": [],
+      "requires": [
+        "railroad-diagrams ; extra == \"diagrams\"",
+        "jinja2 ; extra == \"diagrams\""
+      ],
+      "project_urls": [
+        "Documentation, https://pyparsing-docs.readthedocs.io/en/latest/",
+        "Homepage, https://github.com/pyparsing/pyparsing/",
+        "Source, https://github.com/pyparsing/pyparsing.git"
+      ]
+    },
+    {
+      "name": "python-dateutil",
+      "version": "3.0.0",
+      "license_expression": null,
+      "license_summary": "Dual License",
+      "license_classifiers": [
+        "License :: OSI Approved :: BSD License",
+        "License :: OSI Approved :: Apache Software License"
+      ],
+      "requires": [
+        "six>=1.6",
+        "tzdata"
+      ],
+      "project_urls": [
+        "Documentation, https://dateutil.readthedocs.io/en/stable/",
+        "Source, https://github.com/dateutil/dateutil"
+      ]
+    },
+    {
+      "name": "PyYAML",
+      "version": "6.0.3",
+      "license_expression": null,
+      "license_summary": "MIT",
+      "license_classifiers": [
+        "License :: OSI Approved :: MIT License"
+      ],
+      "requires": [],
+      "project_urls": [
+        "Bug Tracker, https://github.com/yaml/pyyaml/issues",
+        "CI, https://github.com/yaml/pyyaml/actions",
+        "Documentation, https://pyyaml.org/wiki/PyYAMLDocumentation",
+        "Mailing lists, http://lists.sourceforge.net/lists/listinfo/yaml-core",
+        "Source Code, https://github.com/yaml/pyyaml"
+      ]
+    },
+    {
+      "name": "rdflib",
+      "version": "7.6.0",
+      "license_expression": null,
+      "license_summary": "BSD-3-Clause",
+      "license_classifiers": [
+        "License :: OSI Approved :: BSD License"
+      ],
+      "requires": [
+        "berkeleydb (>=18.1.0,<19.0.0) ; extra == \"berkeleydb\"",
+        "html5rdf (>=1.2,<2) ; extra == \"html\"",
+        "httpx (>=0.28.1,<0.29.0) ; extra == \"rdf4j\" or extra == \"graphdb\"",
+        "isodate (>=0.7.2,<1.0.0) ; python_version < \"3.11\"",
+        "lxml (>=4.3,<6.0) ; extra == \"lxml\"",
+        "networkx (>=2,<4) ; extra == \"networkx\"",
+        "orjson (>=3.9.14,<4) ; extra == \"orjson\"",
+        "pyparsing (>=2.1.0,<4)"
+      ],
+      "project_urls": [
+        "Documentation, https://rdflib.readthedocs.org/",
+        "Repository, https://github.com/RDFLib/rdflib"
+      ]
+    },
+    {
+      "name": "referencing",
+      "version": "0.37.0",
+      "license_expression": "MIT",
+      "license_summary": null,
+      "license_classifiers": [],
+      "requires": [
+        "attrs>=22.2.0",
+        "rpds-py>=0.7.0",
+        "typing-extensions>=4.4.0; python_version < '3.13'"
+      ],
+      "project_urls": [
+        "Documentation, https://referencing.readthedocs.io/",
+        "Homepage, https://github.com/python-jsonschema/referencing",
+        "Issues, https://github.com/python-jsonschema/referencing/issues/",
+        "Funding, https://github.com/sponsors/Julian",
+        "Tidelift, https://tidelift.com/subscription/pkg/pypi-referencing?utm_source=pypi-referencing&utm_medium=referral&utm_campaign=pypi-link",
+        "Changelog, https://referencing.readthedocs.io/en/stable/changes/",
+        "Source, https://github.com/python-jsonschema/referencing"
+      ]
+    },
+    {
+      "name": "regex",
+      "version": "2026.9.29",
+      "license_expression": "Apache-2.0 AND CNRI-Python",
+      "license_summary": null,
+      "license_classifiers": [],
+      "requires": [],
+      "project_urls": [
+        "Homepage, https://github.com/mrabarnett/mrab-regex"
+      ]
+    },
+    {
+      "name": "requests",
+      "version": "2.34.2",
+      "license_expression": null,
+      "license_summary": "Apache-2.0",
+      "license_classifiers": [
+        "License :: OSI Approved :: Apache Software License"
+      ],
+      "requires": [
+        "charset_normalizer<4,>=2",
+        "idna<4,>=2.5",
+        "urllib3<3,>=1.26",
+        "certifi>=2023.5.7",
+        "PySocks!=1.5.7,>=1.5.6; extra == \"socks\"",
+        "chardet<8,>=3.0.2; extra == \"use-chardet-on-py3\""
+      ],
+      "project_urls": [
+        "Documentation, https://requests.readthedocs.io",
+        "Source, https://github.com/psf/requests"
+      ]
+    },
+    {
+      "name": "rfc3986",
+      "version": "1.5.0",
+      "license_expression": null,
+      "license_summary": "Apache 2.0",
+      "license_classifiers": [
+        "License :: OSI Approved :: Apache Software License"
+      ],
+      "requires": [
+        "idna ; extra == 'idna2008'"
+      ],
+      "project_urls": []
+    },
+    {
+      "name": "rich",
+      "version": "15.0.0",
+      "license_expression": null,
+      "license_summary": "MIT",
+      "license_classifiers": [
+        "License :: OSI Approved :: MIT License"
+      ],
+      "requires": [
+        "ipywidgets (>=7.5.1,<9) ; extra == \"jupyter\"",
+        "markdown-it-py (>=2.2.0)",
+        "pygments (>=2.13.0,<3.0.0)"
+      ],
+      "project_urls": [
+        "Documentation, https://rich.readthedocs.io/en/latest/",
+        "Homepage, https://github.com/Textualize/rich"
+      ]
+    },
+    {
+      "name": "rpds-py",
+      "version": "2026.9.1",
+      "license_expression": "MIT",
+      "license_summary": null,
+      "license_classifiers": [],
+      "requires": [],
+      "project_urls": [
+        "Documentation, https://rpds.readthedocs.io/",
+        "Funding, https://github.com/sponsors/Julian",
+        "Homepage, https://github.com/crate-py/rpds",
+        "Issues, https://github.com/crate-py/rpds/issues/",
+        "Source, https://github.com/crate-py/rpds",
+        "Tidelift, https://tidelift.com/subscription/pkg/pypi-rpds-py?utm_source=pypi-rpds-py&utm_medium=referral&utm_campaign=pypi-link",
+        "Upstream, https://github.com/orium/rpds"
+      ]
+    },
+    {
+      "name": "segments",
+      "version": "2.4.0",
+      "license_expression": null,
+      "license_summary": "Apache 2.0",
+      "license_classifiers": [
+        "License :: OSI Approved :: Apache Software License"
+      ],
+      "requires": [
+        "regex",
+        "csvw>=1.5.6",
+        "flake8; extra == \"dev\"",
+        "wheel; extra == \"dev\"",
+        "build; extra == \"dev\"",
+        "twine; extra == \"dev\"",
+        "pytest>=5; extra == \"test\"",
+        "pytest-mock; extra == \"test\"",
+        "pytest-cov; extra == \"test\""
+      ],
+      "project_urls": [
+        "Bug Tracker, https://github.com/cldf/segments/issues"
+      ]
+    },
+    {
+      "name": "setuptools",
+      "version": "84.2.1",
+      "license_expression": "MIT",
+      "license_summary": null,
+      "license_classifiers": [],
+      "requires": [
+        "pytest!=8.1.*,>=6; extra == \"test\"",
+        "virtualenv>=13.0.0; extra == \"test\"",
+        "wheel>=0.44.0; extra == \"test\"",
+        "pip>=19.1; extra == \"test\"",
+        "packaging>=26.3; extra == \"test\"",
+        "jaraco.envs>=2.2; extra == \"test\"",
+        "pytest-xdist>=3; extra == \"test\"",
+        "jaraco.path>=3.7.2; extra == \"test\"",
+        "build[virtualenv]>=1.0.3; extra == \"test\"",
+        "filelock>=3.4.0; extra == \"test\"",
+        "ini2toml[lite]>=0.14; extra == \"test\"",
+        "tomli-w>=1.0.0; extra == \"test\"",
+        "pytest-timeout; extra == \"test\"",
+        "pytest-perf; sys_platform != \"cygwin\" and extra == \"test\"",
+        "jaraco.develop>=7.21; (python_version >= \"3.9\" and sys_platform != \"cygwin\") and extra == \"test\"",
+        "pytest-home>=0.5; extra == \"test\"",
+        "pytest-subprocess; extra == \"test\"",
+        "pyproject-hooks!=1.1; extra == \"test\"",
+        "jaraco.test>=5.5; extra == \"test\"",
+        "sphinx>=3.5; extra == \"doc\"",
+        "jaraco.packaging>=9.3; extra == \"doc\"",
+        "rst.linker>=1.9; extra == \"doc\"",
+        "furo; extra == \"doc\"",
+        "sphinx-lint; extra == \"doc\"",
+        "jaraco.tidelift>=1.4; extra == \"doc\"",
+        "pygments-github-lexers==0.0.5; extra == \"doc\"",
+        "sphinx-favicon; extra == \"doc\"",
+        "sphinx-inline-tabs; extra == \"doc\"",
+        "sphinx-reredirects; extra == \"doc\"",
+        "sphinxcontrib-towncrier; extra == \"doc\"",
+        "sphinx-notfound-page<2,>=1; extra == \"doc\"",
+        "pyproject-hooks!=1.1; extra == \"doc\"",
+        "towncrier<24.7; extra == \"doc\"",
+        "packaging>=26.3; extra == \"core\"",
+        "more_itertools>=8.8; extra == \"core\"",
+        "jaraco.text>=3.7; extra == \"core\"",
+        "importlib_metadata>=6; python_version < \"3.10\" and extra == \"core\"",
+        "tomli>=2.0.1; python_version < \"3.11\" and extra == \"core\"",
+        "wheel>=0.43.0; extra == \"core\"",
+        "jaraco.functools>=4; extra == \"core\"",
+        "more_itertools; extra == \"core\"",
+        "pytest-checkdocs>=2.14; extra == \"check\"",
+        "pytest-ruff>=0.2.1; sys_platform != \"cygwin\" and extra == \"check\"",
+        "ruff>=0.13.0; sys_platform != \"cygwin\" and extra == \"check\"",
+        "pytest-cov; extra == \"cover\"",
+        "pytest-enabler>=3.4; extra == \"enabler\"",
+        "pytest-mypy>=1.0.1; platform_python_implementation != \"PyPy\" and extra == \"type\"",
+        "mypy==1.18.*; extra == \"type\"",
+        "importlib_metadata>=7.0.2; python_version < \"3.10\" and extra == \"type\"",
+        "jaraco.develop>=7.21; sys_platform != \"cygwin\" and extra == \"type\""
+      ],
+      "project_urls": [
+        "Source, https://github.com/pypa/setuptools",
+        "Documentation, https://setuptools.pypa.io/",
+        "Changelog, https://setuptools.pypa.io/en/stable/history.html"
+      ]
+    },
+    {
+      "name": "shellingham",
+      "version": "1.5.4",
+      "license_expression": null,
+      "license_summary": "ISC License",
+      "license_classifiers": [
+        "License :: OSI Approved :: ISC License (ISCL)"
+      ],
+      "requires": [],
+      "project_urls": []
+    },
+    {
+      "name": "six",
+      "version": "1.17.0",
+      "license_expression": null,
+      "license_summary": "MIT",
+      "license_classifiers": [
+        "License :: OSI Approved :: MIT License"
+      ],
+      "requires": [],
+      "project_urls": []
+    },
+    {
+      "name": "smart_open",
+      "version": "8.0.4",
+      "license_expression": null,
+      "license_summary": null,
+      "license_classifiers": [
+        "License :: OSI Approved :: MIT License"
+      ],
+      "requires": [
+        "wrapt",
+        "smart_open[azure,gcs,http,lz4,s3,ssh,webhdfs,zst]; extra == \"all\"",
+        "azure-storage-blob>=12.7.0; extra == \"azure\"",
+        "azure-common; extra == \"azure\"",
+        "azure-core; extra == \"azure\"",
+        "google-cloud-storage>=2.6.0; extra == \"gcs\"",
+        "requests; extra == \"http\"",
+        "lz4; extra == \"lz4\"",
+        "boto3>=1.9.17; extra == \"s3\"",
+        "paramiko; extra == \"ssh\"",
+        "smart_open[all]; extra == \"dev\"",
+        "moto[server]; extra == \"dev\"",
+        "responses; extra == \"dev\"",
+        "pre-commit; extra == \"dev\"",
+        "pytest; extra == \"dev\"",
+        "pytest-rerunfailures; extra == \"dev\"",
+        "pytest_benchmark; extra == \"dev\"",
+        "pytest-timeout; extra == \"dev\"",
+        "pytest-xdist[psutil]; extra == \"dev\"",
+        "awscli; extra == \"dev\"",
+        "pyopenssl; extra == \"dev\"",
+        "numpy; extra == \"dev\"",
+        "boto3-stubs[s3]; extra == \"dev\"",
+        "typing_extensions; extra == \"dev\"",
+        "requests; extra == \"webhdfs\"",
+        "backports.zstd>=1.0.0; python_version < \"3.14\" and extra == \"zst\""
+      ],
+      "project_urls": [
+        "Repository, https://github.com/piskvorky/smart_open"
+      ]
+    },
+    {
+      "name": "soundfile",
+      "version": "0.14.0",
+      "license_expression": null,
+      "license_summary": "BSD 3-Clause License",
+      "license_classifiers": [
+        "License :: OSI Approved :: BSD License"
+      ],
+      "requires": [
+        "cffi >=1.0",
+        "numpy",
+        "typing-extensions"
+      ],
+      "project_urls": []
+    },
+    {
+      "name": "spacy",
+      "version": "3.8.16",
+      "license_expression": null,
+      "license_summary": "MIT",
+      "license_classifiers": [
+        "License :: OSI Approved :: MIT License"
+      ],
+      "requires": [
+        "spacy-legacy<3.1.0,>=3.0.11",
+        "spacy-loggers<2.0.0,>=1.0.0",
+        "murmurhash<1.1.0,>=0.28.0",
+        "cymem<2.1.0,>=2.0.2",
+        "preshed<3.1.0,>=3.0.2",
+        "thinc<8.4.0,>=8.3.12",
+        "wasabi<1.2.0,>=0.9.1",
+        "srsly<3.0.0,>=2.5.3",
+        "catalogue<2.1.0,>=2.0.6",
+        "weasel<2.0.0,>=1.0.0",
+        "confection<2.0.0,>=1.3.2",
+        "typer<1.0.0,>=0.3.0",
+        "click<9.0.0,>=8.2.1",
+        "tqdm<5.0.0,>=4.38.0",
+        "numpy>=1.15.0; python_version < \"3.9\"",
+        "numpy>=1.19.0; python_version >= \"3.9\"",
+        "requests<3.0.0,>=2.13.0",
+        "pydantic<3.0.0,>=2.0.0",
+        "jinja2",
+        "setuptools",
+        "packaging>=20.0",
+        "spacy_lookups_data<1.1.0,>=1.0.3; extra == \"lookups\"",
+        "spacy_transformers<1.4.0,>=1.1.2; extra == \"transformers\"",
+        "cupy<13.0.0,>=5.0.0b4; extra == \"cuda\"",
+        "cupy-cuda80<13.0.0,>=5.0.0b4; extra == \"cuda80\"",
+        "cupy-cuda90<13.0.0,>=5.0.0b4; extra == \"cuda90\"",
+        "cupy-cuda91<13.0.0,>=5.0.0b4; extra == \"cuda91\"",
+        "cupy-cuda92<13.0.0,>=5.0.0b4; extra == \"cuda92\"",
+        "cupy-cuda100<13.0.0,>=5.0.0b4; extra == \"cuda100\"",
+        "cupy-cuda101<13.0.0,>=5.0.0b4; extra == \"cuda101\"",
+        "cupy-cuda102<13.0.0,>=5.0.0b4; extra == \"cuda102\"",
+        "cupy-cuda110<13.0.0,>=5.0.0b4; extra == \"cuda110\"",
+        "cupy-cuda111<13.0.0,>=5.0.0b4; extra == \"cuda111\"",
+        "cupy-cuda112<13.0.0,>=5.0.0b4; extra == \"cuda112\"",
+        "cupy-cuda113<13.0.0,>=5.0.0b4; extra == \"cuda113\"",
+        "cupy-cuda114<13.0.0,>=5.0.0b4; extra == \"cuda114\"",
+        "cupy-cuda115<13.0.0,>=5.0.0b4; extra == \"cuda115\"",
+        "cupy-cuda116<13.0.0,>=5.0.0b4; extra == \"cuda116\"",
+        "cupy-cuda117<13.0.0,>=5.0.0b4; extra == \"cuda117\"",
+        "cupy-cuda11x<13.0.0,>=11.0.0; extra == \"cuda11x\"",
+        "cupy-cuda12x<13.0.0,>=11.5.0; extra == \"cuda12x\"",
+        "cupy-wheel<13.0.0,>=11.0.0; extra == \"cuda-autodetect\"",
+        "thinc-apple-ops<2.0.0,>=1.0.0; extra == \"apple\"",
+        "sudachipy!=0.6.1,>=0.5.2; extra == \"ja\"",
+        "sudachidict_core>=20211220; extra == \"ja\"",
+        "natto-py>=0.9.0; extra == \"ko\"",
+        "pythainlp>=2.0; extra == \"th\""
+      ],
+      "project_urls": [
+        "Release notes, https://github.com/explosion/spaCy/releases",
+        "Source, https://github.com/explosion/spaCy"
+      ]
+    },
+    {
+      "name": "spacy-curated-transformers",
+      "version": "0.3.1",
+      "license_expression": null,
+      "license_summary": "MIT",
+      "license_classifiers": [],
+      "requires": [
+        "curated-transformers<0.2.0,>=0.1.0",
+        "curated-tokenizers<0.1.0,>=0.0.9",
+        "torch>=1.12.0"
+      ],
+      "project_urls": []
+    },
+    {
+      "name": "spacy-legacy",
+      "version": "3.0.12",
+      "license_expression": null,
+      "license_summary": "MIT",
+      "license_classifiers": [
+        "License :: OSI Approved :: MIT License"
+      ],
+      "requires": [],
+      "project_urls": []
+    },
+    {
+      "name": "spacy-loggers",
+      "version": "1.0.5",
+      "license_expression": null,
+      "license_summary": "MIT",
+      "license_classifiers": [],
+      "requires": [],
+      "project_urls": []
+    },
+    {
+      "name": "srsly",
+      "version": "2.5.4",
+      "license_expression": null,
+      "license_summary": "MIT",
+      "license_classifiers": [
+        "License :: OSI Approved :: MIT License"
+      ],
+      "requires": [
+        "catalogue<2.1.0,>=2.0.3"
+      ],
+      "project_urls": []
+    },
+    {
+      "name": "sympy",
+      "version": "1.14.0",
+      "license_expression": null,
+      "license_summary": "BSD",
+      "license_classifiers": [
+        "License :: OSI Approved :: BSD License"
+      ],
+      "requires": [
+        "mpmath<1.4,>=1.1.0",
+        "pytest>=7.1.0; extra == \"dev\"",
+        "hypothesis>=6.70.0; extra == \"dev\""
+      ],
+      "project_urls": [
+        "Source, https://github.com/sympy/sympy"
+      ]
+    },
+    {
+      "name": "termcolor",
+      "version": "3.3.0",
+      "license_expression": "MIT",
+      "license_summary": null,
+      "license_classifiers": [],
+      "requires": [
+        "pytest; extra == 'tests'",
+        "pytest-cov; extra == 'tests'"
+      ],
+      "project_urls": [
+        "Changelog, https://github.com/termcolor/termcolor/releases",
+        "Homepage, https://github.com/termcolor/termcolor",
+        "Source, https://github.com/termcolor/termcolor"
+      ]
+    },
+    {
+      "name": "thinc",
+      "version": "8.3.13",
+      "license_expression": null,
+      "license_summary": "MIT",
+      "license_classifiers": [
+        "License :: OSI Approved :: MIT License"
+      ],
+      "requires": [
+        "blis<1.4.0,>=1.3.0",
+        "murmurhash<1.1.0,>=1.0.2",
+        "cymem<2.1.0,>=2.0.2",
+        "preshed<3.1.0,>=3.0.2",
+        "wasabi<1.2.0,>=0.8.1",
+        "srsly<3.1.0,>=2.4.0",
+        "catalogue<2.1.0,>=2.0.4",
+        "confection<2.0.0,>=1.1.0",
+        "setuptools",
+        "numpy<3.0.0,>=1.21.0",
+        "pydantic<3.0.0,>=2.0.0",
+        "packaging>=20.0",
+        "cupy>=5.0.0b4; extra == \"cuda\"",
+        "cupy-cuda80>=5.0.0b4; extra == \"cuda80\"",
+        "cupy-cuda90>=5.0.0b4; extra == \"cuda90\"",
+        "cupy-cuda91>=5.0.0b4; extra == \"cuda91\"",
+        "cupy-cuda92>=5.0.0b4; extra == \"cuda92\"",
+        "cupy-cuda100>=5.0.0b4; extra == \"cuda100\"",
+        "cupy-cuda101>=5.0.0b4; extra == \"cuda101\"",
+        "cupy-cuda102>=5.0.0b4; extra == \"cuda102\"",
+        "cupy-cuda110>=5.0.0b4; extra == \"cuda110\"",
+        "cupy-cuda111>=5.0.0b4; extra == \"cuda111\"",
+        "cupy-cuda112>=5.0.0b4; extra == \"cuda112\"",
+        "cupy-cuda113>=5.0.0b4; extra == \"cuda113\"",
+        "cupy-cuda114>=5.0.0b4; extra == \"cuda114\"",
+        "cupy-cuda115>=5.0.0b4; extra == \"cuda115\"",
+        "cupy-cuda116>=5.0.0b4; extra == \"cuda116\"",
+        "cupy-cuda117>=5.0.0b4; extra == \"cuda117\"",
+        "cupy-cuda11x>=11.0.0; extra == \"cuda11x\"",
+        "cupy-cuda12x>=11.5.0; extra == \"cuda12x\"",
+        "cupy-wheel>=11.0.0; extra == \"cuda-autodetect\"",
+        "ml_datasets<0.3.0,>=0.2.0; extra == \"datasets\"",
+        "torch>=1.6.0; extra == \"torch\"",
+        "tensorflow<2.6.0,>=2.0.0; extra == \"tensorflow\"",
+        "mxnet<1.6.0,>=1.5.1; extra == \"mxnet\"",
+        "thinc-apple-ops<2.0.0,>=1.0.0; extra == \"apple\""
+      ],
+      "project_urls": []
+    },
+    {
+      "name": "torch",
+      "version": "2.14.1",
+      "license_expression": "Apache-2.0 AND Apache-2.0 WITH LLVM-exception AND BSD-2-Clause AND BSD-3-Clause AND BSL-1.0 AND MIT",
+      "license_summary": null,
+      "license_classifiers": [],
+      "requires": [
+        "filelock",
+        "typing-extensions>=4.10.0",
+        "setuptools>=77.0.3",
+        "sympy>=1.13.3",
+        "networkx>=2.5.1",
+        "jinja2",
+        "fsspec>=0.8.5",
+        "cuda-toolkit[cublas,cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==13.0.3; platform_system == \"Linux\"",
+        "cuda-bindings<14,>=13.0.3; platform_system == \"Linux\" and python_version < \"3.15\"",
+        "nvidia-cudnn-cu13==9.24.0.43; platform_system == \"Linux\"",
+        "nvidia-cusparselt-cu13==0.8.1; platform_system == \"Linux\"",
+        "nvidia-nccl-cu13==2.30.7; platform_system == \"Linux\"",
+        "nvidia-nvshmem-cu13==3.4.5; platform_system == \"Linux\"",
+        "triton~=3.8.0; platform_system == \"Linux\" and python_version < \"3.15\"",
+        "triton~=3.8.0; platform_system == \"Linux\" and python_version < \"3.15\"",
+        "triton~=3.8.0; platform_system == \"Linux\" and python_version < \"3.15\"",
+        "optree>=0.13.0; extra == \"optree\"",
+        "opt-einsum>=3.3; extra == \"opt-einsum\"",
+        "pyyaml; extra == \"pyyaml\""
+      ],
+      "project_urls": [
+        "Homepage, https://pytorch.org",
+        "Repository, https://github.com/pytorch/pytorch",
+        "Documentation, https://pytorch.org/docs",
+        "Issue Tracker, https://github.com/pytorch/pytorch/issues",
+        "Forum, https://discuss.pytorch.org"
+      ]
+    },
+    {
+      "name": "tqdm",
+      "version": "4.70.1",
+      "license_expression": null,
+      "license_summary": "MPL-2.0 AND MIT",
+      "license_classifiers": [],
+      "requires": [
+        "colorama; platform_system == \"Windows\"",
+        "requests; extra == \"discord\"",
+        "envwrap; extra == \"discord\"",
+        "slack-sdk; extra == \"slack\"",
+        "envwrap; extra == \"slack\"",
+        "requests; extra == \"telegram\"",
+        "envwrap; extra == \"telegram\"",
+        "ipywidgets>=6; extra == \"notebook\""
+      ],
+      "project_urls": [
+        "homepage, https://tqdm.github.io",
+        "repository, https://github.com/tqdm/tqdm",
+        "changelog, https://tqdm.github.io/releases",
+        "wiki, https://github.com/tqdm/tqdm/wiki"
+      ]
+    },
+    {
+      "name": "truststore",
+      "version": "0.10.5",
+      "license_expression": "MIT",
+      "license_summary": null,
+      "license_classifiers": [],
+      "requires": [],
+      "project_urls": [
+        "Documentation, https://truststore.readthedocs.io",
+        "Source, https://github.com/sethmlarson/truststore"
+      ]
+    },
+    {
+      "name": "typer",
+      "version": "0.27.3",
+      "license_expression": "MIT",
+      "license_summary": null,
+      "license_classifiers": [],
+      "requires": [
+        "shellingham>=1.3.0",
+        "rich>=13.8.0",
+        "annotated-doc>=0.0.2",
+        "colorama; platform_system == \"Windows\""
+      ],
+      "project_urls": [
+        "Homepage, https://github.com/fastapi/typer",
+        "Documentation, https://typer.tiangolo.com",
+        "Repository, https://github.com/fastapi/typer",
+        "Issues, https://github.com/fastapi/typer/issues",
+        "Changelog, https://typer.tiangolo.com/release-notes/"
+      ]
+    },
+    {
+      "name": "typing-inspection",
+      "version": "0.4.4",
+      "license_expression": "MIT",
+      "license_summary": null,
+      "license_classifiers": [],
+      "requires": [
+        "typing-extensions>=4.15.0"
+      ],
+      "project_urls": [
+        "Homepage, https://github.com/pydantic/typing-inspection",
+        "Documentation, https://pydantic.github.io/typing-inspection/dev/",
+        "Source, https://github.com/pydantic/typing-inspection",
+        "Changelog, https://github.com/pydantic/typing-inspection/blob/main/HISTORY.md"
+      ]
+    },
+    {
+      "name": "typing_extensions",
+      "version": "4.16.0",
+      "license_expression": "PSF-2.0",
+      "license_summary": null,
+      "license_classifiers": [],
+      "requires": [],
+      "project_urls": [
+        "Bug Tracker, https://github.com/python/typing_extensions/issues",
+        "Changes, https://github.com/python/typing_extensions/blob/main/CHANGELOG.md",
+        "Documentation, https://typing-extensions.readthedocs.io/",
+        "Home, https://github.com/python/typing_extensions",
+        "Q & A, https://github.com/python/typing/discussions",
+        "Repository, https://github.com/python/typing_extensions"
+      ]
+    },
+    {
+      "name": "tzdata",
+      "version": "2026.5",
+      "license_expression": null,
+      "license_summary": "Apache-2.0",
+      "license_classifiers": [],
+      "requires": [],
+      "project_urls": [
+        "Bug Reports, https://github.com/python/tzdata/issues",
+        "Source, https://github.com/python/tzdata",
+        "Documentation, https://tzdata.python.org"
+      ]
+    },
+    {
+      "name": "uritemplate",
+      "version": "4.2.0",
+      "license_expression": null,
+      "license_summary": "BSD 3-Clause OR Apache-2.0",
+      "license_classifiers": [],
+      "requires": [],
+      "project_urls": [
+        "Source, https://github.com/python-hyper/uritemplate"
+      ]
+    },
+    {
+      "name": "urllib3",
+      "version": "2.8.0",
+      "license_expression": "MIT",
+      "license_summary": null,
+      "license_classifiers": [],
+      "requires": [
+        "brotli>=1.2.0; (platform_python_implementation == 'CPython') and extra == 'brotli'",
+        "brotlicffi>=1.2.0.0; (platform_python_implementation != 'CPython') and extra == 'brotli'",
+        "h2<5,>=4; extra == 'h2'",
+        "pysocks!=1.5.7,<2.0,>=1.5.6; extra == 'socks'",
+        "backports-zstd>=1.0.0; (python_version < '3.14') and extra == 'zstd'"
+      ],
+      "project_urls": [
+        "Changelog, https://github.com/urllib3/urllib3/blob/main/CHANGES.rst",
+        "Documentation, https://urllib3.readthedocs.io",
+        "Code, https://github.com/urllib3/urllib3",
+        "Issue tracker, https://github.com/urllib3/urllib3/issues",
+        "Security policy, https://urllib3.readthedocs.io/en/latest/security.html"
+      ]
+    },
+    {
+      "name": "wasabi",
+      "version": "1.1.3",
+      "license_expression": null,
+      "license_summary": "MIT",
+      "license_classifiers": [],
+      "requires": [
+        "typing-extensions <5.0.0,>=3.7.4.1 ; python_version < \"3.8\"",
+        "colorama >=0.4.6 ; sys_platform == \"win32\" and python_version >= \"3.7\""
+      ],
+      "project_urls": []
+    },
+    {
+      "name": "weasel",
+      "version": "1.0.0",
+      "license_expression": null,
+      "license_summary": "MIT",
+      "license_classifiers": [
+        "License :: OSI Approved :: MIT License"
+      ],
+      "requires": [
+        "confection>=1.0.0",
+        "packaging>=20.0",
+        "wasabi>=0.9.1",
+        "srsly>=2.4.3",
+        "typer>=0.3.0",
+        "cloudpathlib>=0.7.0",
+        "smart-open>=5.2.1",
+        "httpx>=0.24.0",
+        "pydantic>=2.0.0"
+      ],
+      "project_urls": [
+        "Release notes, https://github.com/explosion/weasel/releases",
+        "Source, https://github.com/explosion/weasel/"
+      ]
+    },
+    {
+      "name": "wrapt",
+      "version": "2.5.1",
+      "license_expression": "BSD-2-Clause",
+      "license_summary": null,
+      "license_classifiers": [],
+      "requires": [
+        "pytest; extra == \"dev\"",
+        "setuptools; extra == \"dev\""
+      ],
+      "project_urls": [
+        "Homepage, https://github.com/GrahamDumpleton/wrapt",
+        "Bug Tracker, https://github.com/GrahamDumpleton/wrapt/issues/",
+        "Changelog, https://wrapt.readthedocs.io/en/latest/changes.html",
+        "Documentation, https://wrapt.readthedocs.io/"
+      ]
+    }
+  ]
+}

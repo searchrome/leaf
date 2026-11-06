@@ -1,54 +1,68 @@
 # Leaf
 
-A native macOS EPUB reader with local read-aloud, word or sentence highlighting, automatic page/chapter progression, and pause/resume.
+A native macOS EPUB reader built with SwiftUI and AppKit. Leaf supports installed Mac voices, optional offline Kokoro narration, and optional OpenRouter speech. The Swift app has no third-party Swift package dependencies.
 
-## Run
+## Build and run
 
-Requires macOS 13+ and Swift 5.9+ (Xcode command-line tools). No package dependencies.
+Requirements: macOS 13 or later and Swift 5.9 or later with Xcode command-line tools. The optional local voice requires an Apple Silicon Mac, macOS 14+, 8 GB RAM, and 4 GB available disk space for initial setup.
 
 ```sh
 swift run Leaf
-```
-
-Build a Finder-launchable app:
-
-```sh
+swift test
 bash scripts/package.sh
 open dist/Leaf.app
 ```
 
-Use **Open a book** or Command-O for an unencrypted EPUB. Press **Read aloud** to start from the current page. Space pauses/resumes; arrow keys navigate. Click any word or sentence on the page — during playback or while paused — and the voice rewinds or jumps ahead to it and keeps reading. Select text to bookmark it or look it up; saved selections remain highlighted and appear in the sidebar. A two-chapter sample is included to try narration immediately.
+The package script creates a signed `.app` with its icon and local-voice resources. Its default ad-hoc signature is intended for local development. See [release preparation](docs/RELEASE.md) for Developer ID signing, source export, and the remaining sale/distribution decisions.
 
-## Bookmarks and lookup
+## Reading
 
-Drag to select a word, phrase, or passage. The contextual menu and the controls beside the chapter title offer **Bookmark** and **Look Up**. Bookmarks retain the exact selected text, persist per book, and take you back to the matching page when selected from the sidebar.
+- Open an unencrypted EPUB with **Open a book** or Command-O. A short original sample book is included.
+- **Library** or Command-L reopens previous books. Files remain in their original locations.
+- Space starts, pauses, or resumes narration. Left/Right moves by sentence during narration and by page when idle. The page buttons always navigate pages.
+- Click a word or sentence to narrate from there. F5 toggles the fullscreen listening view.
+- Select text to bookmark it or use **Look Up**. Bookmarks are stored per book.
+- **Reading settings** controls text size, provider, voice, narration pace, and highlighting.
 
-Look Up uses the free dictionaries enabled in macOS Dictionary first, without sending the selection anywhere. If there is no local definition, Leaf uses the saved OpenRouter key to ask `deepseek/deepseek-v4.1-flash` for a short, contextual definition. That fallback sends the selected text and a small surrounding passage to OpenRouter and may use account credits.
+Leaf saves the current book, chapter, and UTF-16 text position. It checkpoints narration every two seconds and saves immediately on pause or normal quit. After relaunch, Read aloud starts at the saved sentence; window resizing preserves the text position. Narration and voice previews prevent automatic display/system sleep until paused, stopped, or finished.
 
-Open **Library** in the sidebar (Command-L) to search and reopen previously opened books. Each book remembers its own chapter and page, and relaunch continues with the last book. Removing a library entry keeps its EPUB file and bookmarks. Books stay in their original locations; use **Open a book** to locate an EPUB again if it has been moved or deleted.
+## Voice providers
 
-## What is implemented
+| Provider | Setup | Book-text processing | Highlight timing |
+| --- | --- | --- | --- |
+| Mac voice | Choose an installed voice | On this Mac | Native speech callbacks |
+| Local model | Download and prepare Kokoro in Settings | On this Mac after setup | Estimated locally |
+| OpenRouter | Supply your own API key and choose a model/voice | Sent to OpenRouter and its providers | Local estimates or optional online transcription |
 
-Native SwiftUI/AppKit UI, text-first EPUB import, installed Mac voices, TextKit pagination, speech-callback highlighting, continuous narration, pause/resume, font sizing, pace and voice selection. Word positions use shared UTF-16 offsets; no estimated timing loop. This uses Apple's native speech API instead of spawning `say`, so real speech-unit callbacks are available. It remains local and uses no cloud AI model. Click-to-seek restarts narration at the clicked word or sentence, and the last book, chapter, page, and text size persist across launches.
+**Local Kokoro:** Setup installs a private Python runtime, the pinned Kokoro model, and 28 American/British English voices in `~/Library/Application Support/Leaf/LocalKokoro`. No Homebrew or system Python installation is required. Setup can be cancelled/retried and generates test speech before marking the model ready. Settings provides voice preview, repair, and download removal. Narration works offline after setup; the worker communicates through private pipes and opens no server port. Model inference uses MLX; its English text-processing dependencies also install PyTorch through spaCy's dependency chain. See the [dependency audit](docs/DEPENDENCIES.md) and [upstream notices](docs/THIRD_PARTY_NOTICES.md).
 
-## OpenRouter voices
+**OpenRouter:** Keys are stored in macOS Keychain, never in project files or UserDefaults. Saving a key selects OpenRouter. Model availability and supported voices depend on the service; use **Refresh models** or enter a model ID manually. Speech generation uses account credits. **Audio timestamps** makes an additional paid transcription request; when timing fails or differs from the source, playback uses clearly labeled estimates. Estimated word/sentence timing may drift. Preview uses fixed sample text rather than book text. Leaf never silently switches speech providers.
 
-Open **Reading settings** (the text-size button at the top right). Paste your OpenRouter key into the secure field and click **Save key**. This stores it in macOS Keychain and selects OpenRouter as the provider. Choose a speech model and voice, then use **Preview voice** or return to the book and press **Read aloud**.
+**Dictionary lookup:** macOS Dictionary is tried first. If no definition is available, the optional online fallback sends the selected passage and nearby context through OpenRouter. This is separate from the selected speech provider and requires a saved key.
 
-The cloud default is `hexgrad/kokoro-82m` with `af_sarah`; `google/gemini-3.8-flash-lite-tts` (Zephyr), `google/gemini-3.1-flash-tts-preview`, and `qwen/qwen-audio-3.0-tts-flash` (voice `longanhuan_v3.6`) are built in as well. Gemini is requested as PCM and wrapped in a 24 kHz, 16-bit mono WAV for macOS playback and transcription; other speech models use MP3. **Refresh models** loads OpenRouter's current speech catalog and supported voices. You can also enter a model ID and supported voice manually. Provider, model, voice, highlighting, and word-following choices persist. The API key is never written into project files or UserDefaults.
+## Tests and local runtime qualification
 
-A live Gemini/Zephyr sample has been generated with the saved key and decoded by macOS; broader playback and timing accuracy qualification remains open. With word highlighting enabled, highlight granularity is chosen in Settings (**Word by word** or **Whole sentences**) and applies to both voice types. Word following defaults to **Fast word follow**: each short passage plays as soon as its audio is ready, and word positions are anchored to the speech window and pauses measured by decoding the audio locally (so MP3 voices with leading silence, like Kokoro, align like the rest); highlights may still drift, and audio much shorter than the passage needs (truncated responses) is refused for word following with a visible notice. Sentence highlighting merges each sentence's word spans. Choosing **Audio timestamps** in Settings transcribes each audio chunk through OpenRouter (default timing model `openai/whisper-1`), and validated word timestamps drive highlights from the player's clock. Speech generation always consumes account credits and sends text/audio to OpenRouter and its providers; the timestamp mode adds a transcription request that also consumes credits. If timestamps are unavailable or differ from the source, playback continues with a visible notice and clearly labeled estimates instead, and further timing requests are skipped for the rest of that chapter. You can turn highlighting off to listen without alignment; pages then advance at chunk boundaries. Preview generates a fixed short sample without transcription or book text.
+The ordinary suite uses generated EPUB fixtures and mocked cloud requests. It does not need a key, download models, or make paid API requests.
 
-The app never silently switches back to a Mac voice. Local speech remains available in the provider selector and requires no key or network connection. See the [OpenRouter speech API](https://openrouter.ai/docs/guides/overview/multimodal/tts) and [timestamped transcription API](https://openrouter.ai/docs/api/api-reference/stt/create-transcription) used by the adapter.
-
-This first version renders chapter text and paragraphs. Publisher CSS/images, full EPUB navigation, encrypted resources, and notarized distribution are not included yet.
-
-## Design and implementation plan
-
-- [Design and synchronization architecture](docs/DESIGN.md)
-- [Prioritized tickets and acceptance criteria](docs/TICKETS.md)
-- [Verification record](docs/VERIFICATION.md)
+The optional hardware integration test downloads/prepares Kokoro in Leaf's actual Application Support directory, generates audio, and checks cancellation/restart:
 
 ```sh
-swift test
+LEAF_VERIFY_LOCAL_KOKORO=1 swift test --filter LocalKokoroTests/testFullSetupOfflineWorkerAndLocalNarration
 ```
+
+## Scope and source distribution
+
+EPUB rendering is text-first. Publisher CSS/images, fixed layouts, DRM/encrypted resources, complete EPUB navigation, and additional local languages are not implemented. Book progress is approximate. App Store sandboxing, distribution notarization, and a full accessibility/device qualification matrix remain release work.
+
+To create a review archive containing source, tests, build scripts, and buyer documentation:
+
+```sh
+python3 scripts/package-source.py
+```
+
+The exporter excludes Git history, build products, installed runtimes, books, caches, credentials, and historical internal notes. It writes a SHA-256 file manifest. Add your approved copyright and buyer license as `LICENSE`, then use `python3 scripts/package-source.py --require-license` for the sale archive. No license for Leaf's original source has been selected by this cleanup. Third-party components retain their own licenses.
+
+- [Architecture and file guide](docs/ARCHITECTURE.md)
+- [Dependency usage and audit](docs/DEPENDENCIES.md)
+- [Third-party notices](docs/THIRD_PARTY_NOTICES.md)
+- [Release and buyer handoff](docs/RELEASE.md)

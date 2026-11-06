@@ -6,6 +6,8 @@ public struct SpeechModel: Decodable, Identifiable, Equatable {
     public let id: String
     public let name: String
     public let supportedVoices: [String]?
+    public static let seedAudioID = "bytedance-seed/seed-audio-1-0"
+    public static func allowsAutomaticVoice(_ model: String) -> Bool { model == seedAudioID }
     enum CodingKeys: String, CodingKey { case id, name; case supportedVoices = "supported_voices" }
     public init(id: String, name: String, supportedVoices: [String]? = nil) {
         self.id = id; self.name = name; self.supportedVoices = supportedVoices
@@ -14,7 +16,8 @@ public struct SpeechModel: Decodable, Identifiable, Equatable {
         SpeechModel(id: "hexgrad/kokoro-82m", name: "Kokoro 82M", supportedVoices: ["af_sarah", "af_alloy", "af_aoede", "af_bella", "af_heart", "af_jessica", "af_kore", "af_nicole", "af_nova", "af_river", "af_sky", "am_adam", "am_echo", "am_eric", "am_fenrir", "am_liam", "am_michael", "am_onyx", "am_puck", "am_santa", "bf_alice", "bf_emma", "bf_isabella", "bf_lily", "bm_daniel", "bm_fable", "bm_george", "bm_lewis", "ef_dora", "em_alex", "em_santa", "ff_siwis", "hf_alpha", "hf_beta", "hm_omega", "hm_psi", "if_sara", "im_nicola", "jf_alpha", "jf_gongitsune", "jf_nezumi", "jf_tebukuro", "jm_kumo", "pf_dora", "pm_alex", "pm_santa", "zf_xiaobei", "zf_xiaoni", "zf_xiaoxiao", "zf_xiaoyi", "zm_yunjian", "zm_yunxi", "zm_yunxia", "zm_yunyang"]),
         SpeechModel(id: "google/gemini-3.8-flash-lite-tts", name: "Gemini 3.8 Flash Lite TTS", supportedVoices: ["Zephyr", "Kore", "Puck", "Charon", "Fenrir", "Aoede"]),
         SpeechModel(id: "google/gemini-3.1-flash-tts-preview", name: "Gemini 3.1 Flash TTS Preview", supportedVoices: ["Zephyr", "Kore", "Puck", "Charon", "Fenrir", "Aoede"]),
-        SpeechModel(id: "qwen/qwen-audio-3.0-tts-flash", name: "Qwen Audio 3.0 TTS Flash", supportedVoices: ["longanhuan_v3.6", "loongjohn"])
+        SpeechModel(id: "qwen/qwen-audio-3.0-tts-flash", name: "Qwen Audio 3.0 TTS Flash", supportedVoices: ["longanhuan_v3.6", "loongjohn"]),
+        SpeechModel(id: seedAudioID, name: "ByteDance Seed: Seed Audio 1.0")
     ]
 }
 
@@ -41,6 +44,12 @@ public struct SpeechChunk {
 public enum CloudSpeechError: LocalizedError {
     case message(String)
     public var errorDescription: String? { if case .message(let message) = self { return message }; return nil }
+}
+
+private struct OpenRouterHTTPError: LocalizedError {
+    let statusCode: Int
+    let message: String
+    var errorDescription: String? { message }
 }
 
 enum CloudAudio {
@@ -278,7 +287,9 @@ public enum CloudAlignment {
         tokenizer.string = text
         var ranges: [NSRange] = []
         tokenizer.enumerateTokens(in: text.startIndex..<text.endIndex) { range, _ in
-            ranges.append(NSRange(range, in: text))
+            if !text[range].trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                ranges.append(NSRange(range, in: text))
+            }
             return true
         }
         return ranges
@@ -453,9 +464,31 @@ public struct OpenRouterClient {
             throw CloudSpeechError.message("There is no text to read in this passage.")
         }
         let usesPCM = model.hasPrefix("google/gemini-")
-        let data = try await post("audio/speech", body: ["model": model, "input": text, "voice": voice, "response_format": usesPCM ? "pcm" : "mp3"], key: key, operation: "speech generation (\(model), voice \(voice))", privateValues: [text])
-        guard !data.isEmpty, data.count <= 20_000_000 else { throw CloudSpeechError.message("The voice provider returned empty or oversized audio.") }
-        return usesPCM ? try CloudAudio.waveFromGeminiPCM(data) : CloudAudio.removingMP3LengthHeaders(data)
+        // Seed takes an audio prompt rather than verbatim TTS input.
+        let input = model == SpeechModel.seedAudioID
+            ? "Read the following passage aloud exactly as written, in a clear, consistent audiobook narration voice. Use speech only, without music, sound effects, or added words.\n\n" + text
+            : text
+        var body: [String: Any] = ["model": model, "input": input, "response_format": usesPCM ? "pcm" : "mp3"]
+        if !voice.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || !SpeechModel.allowsAutomaticVoice(model) {
+            body["voice"] = voice
+        }
+        var retries = 0
+        while true {
+            try Task.checkCancellation()
+            do {
+                let data = try await post("audio/speech", body: body, key: key, operation: "speech generation (\(model), voice \(voice.isEmpty ? "automatic" : voice))", privateValues: [input, text])
+                if data.isEmpty, retries < 2 {
+                    retries += 1
+                    try await Task.sleep(nanoseconds: UInt64(retries) * 500_000_000)
+                    continue
+                }
+                guard !data.isEmpty, data.count <= 20_000_000 else { throw CloudSpeechError.message("The voice provider returned empty or oversized audio.") }
+                return usesPCM ? try CloudAudio.waveFromGeminiPCM(data) : CloudAudio.removingMP3LengthHeaders(data)
+            } catch let error as OpenRouterHTTPError where [502, 503, 524, 529].contains(error.statusCode) && retries < 2 {
+                retries += 1
+                try await Task.sleep(nanoseconds: UInt64(retries) * 500_000_000)
+            }
+        }
     }
 
     public func timings(audio: Data, model: String, key: String) async throws -> [TranscriptWord] {
@@ -557,7 +590,12 @@ public struct OpenRouterClient {
                 detail = detail.replacingOccurrences(of: "sk-[A-Za-z0-9_-]+", with: "[redacted]", options: .regularExpression)
                 detail = String(detail.components(separatedBy: .controlCharacters).joined(separator: " ").prefix(400))
             }
-            throw CloudSpeechError.message("OpenRouter \(operation) failed (HTTP \(http.statusCode)). \(message)" + (detail.isEmpty ? "" : " Provider: \(detail)"))
+            let explanation = http.statusCode == 400 &&
+                (detail.localizedCaseInsensitiveContains("PROHIBITED_CONTENT") || detail.localizedCaseInsensitiveContains("content moderation"))
+                ? "The speech provider blocked this request through content moderation. Leaf received no audio; refreshing the model list will not fix this response."
+                : message
+            throw OpenRouterHTTPError(statusCode: http.statusCode,
+                                      message: "OpenRouter \(operation) failed (HTTP \(http.statusCode)). \(explanation)" + (detail.isEmpty ? "" : " Provider: \(detail)"))
         }
     }
 }

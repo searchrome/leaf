@@ -8,6 +8,8 @@ struct LibraryBook: Codable, Identifiable, Equatable {
     var chapterIndex: Int
     var pageIndex: Int
     var lastOpened: Date
+    var textOffset: Int? = nil
+    var speechOffset: Int? = nil
 
     func resolvedURL() -> URL? {
         if let bookmark {

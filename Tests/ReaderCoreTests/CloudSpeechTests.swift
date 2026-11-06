@@ -235,6 +235,25 @@ final class OpenRouterClientTests: XCTestCase {
         XCTAssertEqual(player.duration, 1, accuracy: 0.001)
     }
 
+    func testSeedAudioSupportsAutomaticAndExplicitSpeakerVoices() async throws {
+        for voice in ["", "seed-speaker-id"] {
+            StubHTTP.handler = { request in
+                XCTAssertEqual(request.url?.path, "/api/v1/audio/speech")
+                let body = try self.body(request)
+                XCTAssertEqual(body["model"] as? String, SpeechModel.seedAudioID)
+                XCTAssertEqual(body["response_format"] as? String, "mp3")
+                if voice.isEmpty { XCTAssertNil(body["voice"]) }
+                else { XCTAssertEqual(body["voice"] as? String, voice) }
+                let prompt = try XCTUnwrap(body["input"] as? String)
+                XCTAssertTrue(prompt.contains("exactly as written"))
+                XCTAssertTrue(prompt.hasSuffix("\n\nHello from the book."))
+                return (200, Data("seed-audio".utf8))
+            }
+            let audio = try await client().speech(text: "Hello from the book.", model: SpeechModel.seedAudioID, voice: voice, key: "test-placeholder")
+            XCTAssertEqual(audio, Data("seed-audio".utf8))
+        }
+    }
+
     func testTimingRequestAndResponse() async throws {
         StubHTTP.handler = { request in
             XCTAssertEqual(request.url?.path, "/api/v1/audio/transcriptions")
@@ -257,6 +276,49 @@ final class OpenRouterClientTests: XCTestCase {
         }
         let audio = try await client().speech(text: "Hello", model: "mistralai/voxtral-mini-tts-2603", voice: "test", key: "test-placeholder")
         XCTAssertEqual(audio, Data([1, 2, 3]))
+    }
+
+    func testSpeechRetriesTransientProviderFailure() async throws {
+        var attempts = 0
+        StubHTTP.handler = { _ in
+            attempts += 1
+            return attempts == 1
+                ? (502, Data(#"{"error":{"message":"Provider returned an empty audio stream after returning HTTP 200"}}"#.utf8))
+                : (200, Data([1, 2, 3]))
+        }
+        let audio = try await client().speech(text: "Hello", model: "hexgrad/kokoro-82m", voice: "af_sarah", key: "test-placeholder")
+        XCTAssertEqual(audio, Data([1, 2, 3]))
+        XCTAssertEqual(attempts, 2)
+    }
+
+    func testSpeechDoesNotRetryInvalidRequest() async {
+        var attempts = 0
+        StubHTTP.handler = { _ in
+            attempts += 1
+            return (400, Data(#"{"error":{"message":"Invalid voice"}}"#.utf8))
+        }
+        do {
+            _ = try await client().speech(text: "Hello", model: "hexgrad/kokoro-82m", voice: "wrong", key: "test-placeholder")
+            XCTFail("Expected invalid request error")
+        } catch {
+            XCTAssertTrue(error.localizedDescription.contains("HTTP 400"))
+            XCTAssertEqual(attempts, 1)
+        }
+    }
+
+    func testModerationErrorDoesNotClaimVoiceIsUnsupported() async {
+        StubHTTP.handler = { _ in
+            (400, Data(#"{"error":{"message":"Provider blocked this request through content moderation (provider finish reason: PROHIBITED_CONTENT)"}}"#.utf8))
+        }
+        do {
+            _ = try await client().speech(text: "A benign sample", model: "google/gemini-3.1-flash-tts-preview", voice: "Umbriel", key: "test-placeholder")
+            XCTFail("Expected content moderation error")
+        } catch {
+            let message = error.localizedDescription
+            XCTAssertTrue(message.contains("content moderation"))
+            XCTAssertFalse(message.contains("Refresh models"))
+            XCTAssertFalse(message.contains("supported model and voice"))
+        }
     }
 
     func testGeminiWaveIsPassedToTranscriptionWithCorrectFormat() async throws {

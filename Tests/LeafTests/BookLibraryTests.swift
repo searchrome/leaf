@@ -1,4 +1,5 @@
 import XCTest
+import ReaderCore
 @testable import Leaf
 
 final class BookLibraryTests: XCTestCase {
@@ -65,6 +66,74 @@ final class BookLibraryTests: XCTestCase {
         try await waitForImport(reader)
         XCTAssertEqual(reader.chapterIndex, 1)
         XCTAssertEqual(reader.library.count, 1)
+    }
+
+    @MainActor
+    func testNarratedSentenceAndTextAnchorSurviveRelaunchResizeAndBookSwitch() async throws {
+        let suite = "leaf-anchor-test-\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(suite)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let url = try fixture(root: root.appendingPathComponent("one"), title: "Remember me")
+        let other = try fixture(root: root.appendingPathComponent("two"), title: "Another book")
+        let reader = ReaderModel(restorePosition: false, defaults: defaults)
+        reader.load(url)
+        try await waitForImport(reader)
+        reader.resize(CGSize(width: 260, height: 190))
+        reader.selectChapter(1)
+        reader.state = .paused
+        for _ in 0..<15 { reader.navigateReading(1) }
+        let saved = try XCTUnwrap(ReadingPositionStore.load(defaults: defaults))
+        let anchor = try XCTUnwrap(saved.textOffset)
+        let sentence = try XCTUnwrap(saved.speechOffset)
+        XCTAssertGreaterThan(sentence, 0)
+        XCTAssertGreaterThan(reader.pageIndex, 0)
+        reader.stop()
+        reader.savePosition()
+
+        let restored = ReaderModel(defaults: defaults)
+        try await waitForImport(restored)
+        XCTAssertEqual(restored.book.title, "Remember me")
+        XCTAssertEqual(restored.chapterIndex, 1)
+        XCTAssertEqual(restored.narrationStartOffset, sentence)
+        XCTAssertEqual(restored.state, .idle)
+        for size in [CGSize(width: 700, height: 650), CGSize(width: 240, height: 180)] {
+            restored.resize(size)
+            XCTAssertTrue(NSLocationInRange(anchor, restored.pageRange))
+            XCTAssertEqual(ReadingPositionStore.load(defaults: defaults)?.textOffset, anchor)
+            XCTAssertEqual(restored.narrationStartOffset, sentence)
+        }
+        restored.load(other)
+        try await waitForImport(restored)
+        restored.openLibraryBook(try XCTUnwrap(restored.library.first { $0.title == "Remember me" }))
+        try await waitForImport(restored)
+        XCTAssertEqual(restored.narrationStartOffset, sentence)
+        XCTAssertTrue(NSLocationInRange(anchor, restored.pageRange))
+        restored.turnPage(1)
+        XCTAssertNil(ReadingPositionStore.load(defaults: defaults)?.speechOffset)
+        XCTAssertEqual(restored.narrationStartOffset, restored.pageRange.location)
+    }
+
+    @MainActor
+    func testLegacyPageOnlyPositionStillLoadsAndMissingBookDoesNotOverwriteIt() throws {
+        let suite = "leaf-legacy-position-test-\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let legacy = ReadingPosition(bookmark: nil, chapterIndex: 1, pageIndex: 0)
+        ReadingPositionStore.save(legacy, defaults: defaults)
+        let reader = ReaderModel(defaults: defaults)
+        XCTAssertEqual(reader.chapterIndex, 1)
+        XCTAssertEqual(reader.pageIndex, 0)
+        let missing = ReadingPosition(bookmark: nil, chapterIndex: 4, pageIndex: 3,
+                                      textOffset: 500, speechOffset: 480,
+                                      fileURL: URL(fileURLWithPath: "/missing-\(UUID()).epub"))
+        ReadingPositionStore.save(missing, defaults: defaults)
+        let unavailable = ReaderModel(defaults: defaults)
+        unavailable.resize(CGSize(width: 280, height: 220))
+        unavailable.savePosition()
+        XCTAssertNotNil(unavailable.error)
+        XCTAssertEqual(ReadingPositionStore.load(defaults: defaults), missing)
     }
 
     @MainActor

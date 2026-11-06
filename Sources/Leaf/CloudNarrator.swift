@@ -21,6 +21,7 @@ struct CloudConfiguration {
     var alignWords: Bool
     var timingMode: CloudWordTiming = .transcribed
     var highlightGranularity: HighlightGranularity = .word
+    var isLocal: Bool = false
 }
 
 @MainActor
@@ -85,6 +86,7 @@ final class CloudNarrator: NSObject, AVAudioPlayerDelegate {
     }
 
     func stop() {
+        if config?.isLocal == true { LocalKokoroWorker.shared.stop() }
         generation = UUID()
         task?.cancel()
         queued.values.forEach { $0.cancel() }
@@ -118,6 +120,8 @@ final class CloudNarrator: NSObject, AVAudioPlayerDelegate {
             finishedChunk()
         } else if let player, !player.play() {
             onError?(CloudSpeechError.message("The generated audio could not resume."))
+        } else if player != nil {
+            queueNextChunk()
         }
     }
     func setRate(_ rate: Float) { self.rate = rate; player?.rate = rate }
@@ -126,16 +130,9 @@ final class CloudNarrator: NSObject, AVAudioPlayerDelegate {
         guard index < chunks.count, let config else { onFinish?(); return }
         let token = generation
         let chunk = chunks[index]
-        // Start a bounded lookahead immediately, overlapping speech and timing requests.
-        for upcoming in index...min(index + 2, chunks.count - 1) where queued[upcoming] == nil {
-            let next = chunks[upcoming]
-            let key = CacheKey(next.text, config)
-            if let cached = cache.first(where: { $0.key == key })?.value {
-                queued[upcoming] = Task { cached }
-            } else {
-                queued[upcoming] = Task { try await Self.prepare(next, configuration: config) }
-            }
-        }
+        // Prepare the current passage first. Request lookahead only after playback
+        // starts, so opening a page does not burst several TTS requests at once.
+        if queued[index] == nil { queueChunk(index, configuration: config) }
         let preparation = queued.removeValue(forKey: index)!
         preparing = preparation
         lastRange = nil
@@ -166,7 +163,10 @@ final class CloudNarrator: NSObject, AVAudioPlayerDelegate {
                 audioPlayer.rate = self.rate
                 audioPlayer.prepareToPlay()
                 self.onPreparing?(false)
-                if !self.paused, !audioPlayer.play() { throw CloudSpeechError.message("The generated audio could not play.") }
+                if !self.paused {
+                    guard audioPlayer.play() else { throw CloudSpeechError.message("The generated audio could not play.") }
+                    self.queueNextChunk()
+                }
                 self.timer?.invalidate()
                 let timer = Timer(timeInterval: 1.0 / 40.0, repeats: true) { [weak self] _ in
                     Task { @MainActor in self?.tick() }
@@ -181,16 +181,36 @@ final class CloudNarrator: NSObject, AVAudioPlayerDelegate {
         }
     }
 
+    private func queueNextChunk() {
+        guard let config, chunks.indices.contains(index + 1), queued[index + 1] == nil else { return }
+        queueChunk(index + 1, configuration: config)
+    }
+
+    private func queueChunk(_ chunkIndex: Int, configuration: CloudConfiguration) {
+        let chunk = chunks[chunkIndex]
+        let key = CacheKey(chunk.text, configuration)
+        if let cached = cache.first(where: { $0.key == key })?.value {
+            queued[chunkIndex] = Task { cached }
+        } else {
+            queued[chunkIndex] = Task { try await Self.prepare(chunk, configuration: configuration) }
+        }
+    }
+
     static func prepare(_ chunk: SpeechChunk, configuration: CloudConfiguration, client: OpenRouterClient = OpenRouterClient()) async throws -> Prepared {
         try Task.checkCancellation()
-        let audio = try await client.speech(text: chunk.text, model: configuration.model, voice: configuration.voice, key: configuration.key)
+        let audio: Data
+        if configuration.isLocal {
+            audio = try await LocalKokoroWorker.shared.generate(text: chunk.text, voice: configuration.voice)
+        } else {
+            audio = try await client.speech(text: chunk.text, model: configuration.model, voice: configuration.voice, key: configuration.key)
+        }
         try Task.checkCancellation()
         let probe = try AVAudioPlayer(data: audio)
-        guard probe.duration.isFinite, probe.duration > 0 else { throw CloudSpeechError.message("The cloud voice returned invalid audio.") }
+        guard probe.duration.isFinite, probe.duration > 0 else { throw CloudSpeechError.message("The voice returned invalid audio.") }
         var words: [TimedWord] = []
         var warning: String?
         if configuration.alignWords {
-            if configuration.timingMode == .estimated {
+            if configuration.isLocal || configuration.timingMode == .estimated {
                 words = CloudAlignment.estimatedTimings(chunk.text, audio: audio, duration: probe.duration)
                 if words.isEmpty {
                     warning = "The voice returned much shorter audio than this passage needs, so word following is off for it."
@@ -233,7 +253,7 @@ final class CloudNarrator: NSObject, AVAudioPlayerDelegate {
     nonisolated func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {
         Task { @MainActor in
             guard player === self.player else { return }
-            guard flag else { self.onError?(CloudSpeechError.message("Cloud audio playback was interrupted.")); return }
+            guard flag else { self.onError?(CloudSpeechError.message("Audio playback was interrupted.")); return }
             if self.paused { self.completionPending = true; return }
             self.finishedChunk()
         }
@@ -242,7 +262,7 @@ final class CloudNarrator: NSObject, AVAudioPlayerDelegate {
     nonisolated func audioPlayerDecodeErrorDidOccur(_ player: AVAudioPlayer, error: Error?) {
         Task { @MainActor in
             guard player === self.player else { return }
-            self.onError?(CloudSpeechError.message("The cloud voice returned audio that this Mac could not decode."))
+            self.onError?(CloudSpeechError.message("The voice returned audio that this Mac could not decode."))
         }
     }
 
