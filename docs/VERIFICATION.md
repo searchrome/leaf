@@ -43,3 +43,23 @@ Split app entry, reader UI, text view, listening/lookup views, saved-position ty
 The local Python package graph is pinned to the qualified installed versions. Metadata inventory contains 94 distributions. pip-audit reported no known advisories for 93 audited distributions; en-core-web-sm 3.8.0 could not be audited through PyPI. GPL/LGPL/MPL and ambiguous upstream metadata are recorded in docs/DEPENDENCIES.md and docs/THIRD_PARTY_NOTICES.md. This is not an approval of commercial licensing or a complete native-library/model vulnerability assessment.
 
 All 66 Swift tests passed with the opt-in real local installer/generation test enabled. A source review archive was checked for valid ZIP contents, per-file SHA-256 manifest matches, absence of developer home-directory paths, and excluded runtime/build/history/private-key data. The archive was then extracted into a new temporary folder: its ordinary tests passed (66 total, one opt-in test skipped), and its own release package script built and signature-verified Leaf.app without referencing the original checkout. Buyer license/owner attribution remains to be supplied. No source archive, app, or repository has been published as part of those checks.
+
+## Open source preparation — 2026-11-10
+
+The repository now licenses Leaf's original code and assets under MIT, attributed
+to Serdar Ozay. This supersedes the historical notes above about an outstanding
+buyer license. Added contributor and security-reporting guidance, a macOS CI
+workflow, and open source release instructions. Optional downloaded dependencies
+retain their upstream licenses. No repository visibility or publishing change
+was made by this preparation.
+
+`swift test`: 66 tests executed, one opt-in local-runtime test skipped, zero
+failures on Apple Silicon with Swift 6.3.3. The real model installer and paid
+services were not exercised during this preparation.
+
+Release packaging completed successfully, including ad-hoc signature verification
+and bundled MIT/third-party notices. A limited credential-pattern scan of 55
+tracked files and all seven existing commits found no matching OpenRouter keys,
+GitHub tokens, AWS access-key IDs, or private-key headers. This scan does not
+establish the absence of all secrets or private data. The new GitHub workflow
+has been added locally and has not yet run on GitHub.

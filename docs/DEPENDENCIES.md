@@ -32,7 +32,7 @@ PyPA `pip-audit` queried public package vulnerability advisories for the install
 
 ## License findings
 
-Kokoro weights are Apache 2.0, and kokoro-mlx/MLX declare MIT licenses. The full runtime also contains **GPL** components (eSpeak NG and phonemizer), **LGPL** number processing, and **MPL** components such as certifi/tqdm. Some distributions have incomplete or ambiguous metadata, including the eSpeak loader wrapper. Therefore an Apache-only/MIT-only description of the whole download would be inaccurate. Review upstream source and actual bundled notices before deciding redistribution and buyer-license terms; see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). No downloaded runtime/library binaries or weights are included in the source archive.
+Kokoro weights are Apache 2.0, and kokoro-mlx/MLX declare MIT licenses. The full runtime also contains **GPL** components (eSpeak NG and phonemizer), **LGPL** number processing, and **MPL** components such as certifi/tqdm. Some distributions have incomplete or ambiguous metadata, including the eSpeak loader wrapper. Therefore an Apache-only/MIT-only description of the whole download would be inaccurate. Review upstream source and actual bundled notices before deciding redistribution terms; see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). No downloaded runtime/library binaries or weights are included in the source archive.
 
 ## Refreshing the audit
 

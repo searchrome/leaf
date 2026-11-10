@@ -17,6 +17,8 @@ for SIZE in 16 32 128 256 512; do
     fi
 done
 iconutil -c icns "$ICONSET" -o "$APP/Contents/Resources/Leaf.icns"
+cp LICENSE "$APP/Contents/Resources/LICENSE"
+cp docs/THIRD_PARTY_NOTICES.md "$APP/Contents/Resources/THIRD_PARTY_NOTICES.md"
 cp packaging/Info.plist "$APP/Contents/Info.plist"
 SIGNING_IDENTITY="${SIGNING_IDENTITY:--}"
 if [ "$SIGNING_IDENTITY" = "-" ]; then

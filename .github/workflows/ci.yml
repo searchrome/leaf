@@ -1,0 +1,26 @@
+name: macOS checks
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    runs-on: macos-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - name: Show toolchain
+        run: swift --version
+      - name: Run tests
+        run: swift test
+      - name: Build and verify app bundle
+        run: REGISTER_APP=0 bash scripts/package.sh
+      - name: Export licensed source
+        run: python3 scripts/package-source.py --require-license

@@ -8,11 +8,11 @@ import re
 import zipfile
 
 ROOT = Path(__file__).resolve().parent.parent
-ROOT_FILES = ("Package.swift", "README.md", ".gitignore", "LICENSE")
-DOC_FILES = ("docs/ARCHITECTURE.md", "docs/RELEASE.md", "docs/THIRD_PARTY_NOTICES.md", "docs/DEPENDENCIES.md",
+ROOT_FILES = ("Package.swift", "README.md", ".gitignore", "LICENSE", "CONTRIBUTING.md", "SECURITY.md")
+DOC_FILES = ("docs/ARCHITECTURE.md", "docs/RELEASE.md", "docs/TICKETS.md", "docs/THIRD_PARTY_NOTICES.md", "docs/DEPENDENCIES.md",
              "docs/dependency-inventory.json", "docs/dependency-vulnerabilities.json")
 SOURCE_DIRS = {"Sources": {".swift", ".py", ".txt"}, "Tests": {".swift"},
-               "packaging": {".swift", ".plist"}, "scripts": {".sh", ".py"}}
+               "packaging": {".swift", ".plist"}, "scripts": {".sh", ".py"}, ".github": {".md", ".yml", ".yaml"}}
 SECRET = re.compile(rb"sk-or-v1-[a-fA-F0-9]{64}|-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----")
 
 
@@ -36,11 +36,11 @@ def source_files():
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--require-license", action="store_true",
-                        help="Refuse to create a sale package until a LICENSE is supplied")
+                        help="Refuse to create a source archive unless a LICENSE is supplied")
     args = parser.parse_args()
     has_license = (ROOT / "LICENSE").is_file() and bool((ROOT / "LICENSE").read_text().strip())
     if args.require_license and not has_license:
-        parser.error("Add your approved buyer license as LICENSE before exporting for sale.")
+        parser.error("Add LICENSE before exporting a licensed source archive.")
     output = ROOT / "dist" / ("Leaf-source.zip" if has_license else "Leaf-source-review.zip")
     output.parent.mkdir(parents=True, exist_ok=True)
     files = list(source_files())
@@ -57,7 +57,7 @@ def main():
         temporary.unlink(missing_ok=True)
     print(f"Created {output} ({len(files)} source files)")
     if not has_license:
-        print("Review package only: copyright attribution and buyer license terms still need to be supplied.")
+        print("Review package only: LICENSE is missing.")
 
 
 if __name__ == "__main__":

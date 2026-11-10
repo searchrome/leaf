@@ -1,6 +1,6 @@
 # Third-party notices and runtime licenses
 
-Leaf has no third-party Swift packages. Apple frameworks and system tools are provided by macOS. The source review archive contains Leaf integration code, configuration, and tests; it does not contain downloaded speech weights, Python, uv binaries, or Python site-packages. Optional downloads retain their own upstream licenses. Leaf's original code needs its own owner-approved buyer license.
+Leaf has no third-party Swift packages. Apple frameworks and system tools are provided by macOS. The source archive contains Leaf integration code, configuration, and tests; it does not contain downloaded speech weights, Python, uv binaries, or Python site-packages. Optional downloads retain their own upstream licenses. Leaf's original code, sample book, and generated icon are covered by the repository's [MIT License](../LICENSE).
 
 ## Optional local speech
 
@@ -23,7 +23,7 @@ The model's Apache license does not describe every runtime component. In particu
 
 ## Hosted services
 
-OpenRouter and its model providers are optional hosted services accessed using the user's key. API access, billing, model availability, data handling, and service terms are separate from a purchase of Leaf's source. No API account or usage credits are supplied in the source package. See [OpenRouter](https://openrouter.ai/) for its current service terms.
+OpenRouter and its model providers are optional hosted services accessed using the user's key. API access, billing, model availability, data handling, and service terms are separate from Leaf's MIT source license. No API account or usage credits are supplied in the source package. See [OpenRouter](https://openrouter.ai/) for its current service terms.
 
 ## Original assets
 
