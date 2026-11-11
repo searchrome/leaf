@@ -15,6 +15,7 @@ struct PageText: NSViewRepresentable {
     let onRemoveBookmark: () -> Void
     let onBookmark: () -> Void
     let onLookup: () -> Void
+    var onChat: () -> Void = {}
 
     final class Coordinator: NSObject, NSTextViewDelegate {
         var parent: PageText
@@ -36,6 +37,7 @@ struct PageText: NSViewRepresentable {
         var onBookmarkHit: ((Int) -> Bool)?
         var onBookmark: (() -> Void)?
         var onLookup: (() -> Void)?
+        var onChat: (() -> Void)?
         var onRemoveBookmark: (() -> Void)?
         var removalRange: NSRange?
         private(set) lazy var removeButton: NSButton = {
@@ -134,13 +136,17 @@ struct PageText: NSViewRepresentable {
             bookmark.target = self
             let lookup = NSMenuItem(title: "Look Up Selected Text", action: #selector(lookUpSelection), keyEquivalent: "")
             lookup.target = self
+            let chat = NSMenuItem(title: "Chat About Selected Text", action: #selector(chatSelection), keyEquivalent: "")
+            chat.target = self
             menu.insertItem(.separator(), at: 0)
+            menu.insertItem(chat, at: 0)
             menu.insertItem(lookup, at: 0)
             menu.insertItem(bookmark, at: 0)
             return menu
         }
 
         @objc private func bookmarkSelection() { onBookmark?() }
+        @objc private func chatSelection() { onChat?() }
         @objc private func lookUpSelection() { onLookup?() }
     }
 
@@ -161,6 +167,7 @@ struct PageText: NSViewRepresentable {
         view.bookmarkRanges = bookmarks
         view.onBookmark = onBookmark
         view.onLookup = onLookup
+        view.onChat = onChat
         view.delegate = context.coordinator
         return view
     }
@@ -175,6 +182,7 @@ struct PageText: NSViewRepresentable {
             seekView.bookmarkRanges = bookmarks
             seekView.onBookmark = onBookmark
             seekView.onLookup = onLookup
+            seekView.onChat = onChat
             seekView.onRemoveBookmark = onRemoveBookmark
             seekView.removalRange = selectedBookmark
         }

@@ -6,6 +6,7 @@ struct ReaderView: View {
     @ObservedObject var reader: ReaderModel
     @ObservedObject var speech: SpeechSettings
     @State private var bookmarksExpanded = false
+    @State private var openChatSettings = false
     @State private var listeningViewEnteredFullscreen = false
 
     init(reader: ReaderModel) {
@@ -36,7 +37,8 @@ struct ReaderView: View {
                                 if let bookmark = reader.selectedBookmark { reader.removeBookmark(bookmark) }
                             },
                             onBookmark: reader.bookmarkSelectedText,
-                            onLookup: reader.lookUpSelectedText)
+                            onLookup: reader.lookUpSelectedText,
+                            onChat: reader.chatAboutSelectedText)
                             .frame(width: width, height: height)
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -53,6 +55,13 @@ struct ReaderView: View {
             Button("OK") { reader.error = nil }
         } message: { Text(reader.error ?? "") }
         .sheet(isPresented: $reader.showLibrary) { BookLibraryView(reader: reader) }
+        .sheet(item: $reader.passageChat, onDismiss: {
+            if openChatSettings { openChatSettings = false; reader.showSettings = true }
+        }) { chat in
+            PassageChatView(chat: chat, settings: speech) {
+                openChatSettings = true
+            }
+        }
         .sheet(item: $reader.lookupResult) { result in
             DictionaryLookupView(result: result)
         }
@@ -187,10 +196,14 @@ struct ReaderView: View {
                 Text(reader.chapter.title).font(.system(size: 14, weight: .medium, design: .serif)).lineLimit(1)
             }
             Spacer()
-            if reader.selectedBookmark == nil && reader.hasTextSelection {
+            if reader.hasTextSelection {
                 HStack(spacing: 8) {
                     Button(action: reader.bookmarkSelectedText) {
                         Label("Bookmark", systemImage: "bookmark")
+                    }
+                    .buttonStyle(.bordered).controlSize(.small)
+                    Button(action: reader.chatAboutSelectedText) {
+                        Label("Ask AI", systemImage: "bubble.left.and.bubble.right")
                     }
                     .buttonStyle(.bordered).controlSize(.small)
                     Button(action: reader.lookUpSelectedText) {

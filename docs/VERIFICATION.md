@@ -63,3 +63,55 @@ tracked files and all seven existing commits found no matching OpenRouter keys,
 GitHub tokens, AWS access-key IDs, or private-key headers. This scan does not
 establish the absence of all secrets or private data. The new GitHub workflow
 has been added locally and has not yet run on GitHub.
+
+## Passage chat — 2026-11-11
+
+Added selection-scoped AI conversations through OpenRouter with GLM-5.3 Flash as
+the default and an editable chat model ID in Reading settings. The passage is
+captured when opening the sheet; follow-up requests include the completed chat
+history. Requests start only after the reader asks a question. Failed/cancelled
+questions stay available for retry; closing cancels requests and answer audio.
+Conversations are not persisted. Answer listening uses the selected Mac, Kokoro,
+or OpenRouter voice without changing book narration offsets.
+
+`swift test`: 76 tests executed, one opt-in local-model test skipped, zero failures.
+New coverage checks selection/history/model requests, private-input redaction,
+empty responses, input bounds, failed-request retry, missing keys, stale replies
+after close, selection capture, stopping book narration, and native answer
+playback start/stop. Cloud chat calls are mocked; no paid chat or answer-speech
+request was made. Live GLM responses and audible local/cloud answer quality
+remain unverified.
+
+The release app built and its ad-hoc signature verified. In an isolated QA bundle
+with separate preferences and Keychain identity, native UI checks confirmed
+selection → Ask AI → passage popup, question input, missing-key error with draft
+preservation, and Settings navigation to the editable default chat model. The
+existing Leaf process and its open book were left in place.
+
+### Prepared question tags — 2026-11-11
+
+Added Summarize, Simplify, Key points, and Give an example tags above the passage
+chat input. Each sends its full prepared question immediately through the normal
+chat path. Hover text reveals the question; tags are disabled during requests
+and when the conversation limit is reached. The passage-chat suite passed all
+eight tests, including a new test for immediate sends, preserved selection and
+follow-up history, and ignoring duplicate clicks while a request is pending.
+
+### Conversation bubble layout — 2026-11-11
+
+The passage is now the first bubble in the same scrolling transcript as the
+conversation. User questions align right in blue bubbles; AI replies align left
+in gray bubbles with Listen controls. Prompt tags and the composer stay below
+the transcript. Scrolling waits for wrapped bubble layout and follows new
+questions, answers, and errors to the bottom.
+
+All eight passage-chat regression tests passed. An isolated native preview with
+mocked replies verified the bubble layout, multiple follow-up exchanges, full
+visibility of the latest reply, and returning to the latest answer after manually
+scrolling to earlier history. No API credentials or paid requests were used for
+this visual check.
+
+### v0.2.0 release checks — 2026-11-11
+
+Final ordinary suite: 77 tests executed, one optional model integration test
+skipped, zero failures. The app version is 0.2.0 (build 3).

@@ -14,6 +14,7 @@ Leaf is a Swift Package with a native executable target (`Leaf`) and a reusable 
 | `ReadingPosition.swift`, `BookLibrary.swift`, `ReaderAnnotations.swift` | Saved positions, recent books, text bookmarks |
 | `ReadingSettingsView.swift`, `SpeechSettings.swift` | Settings and Keychain-backed cloud credentials |
 | `PlaybackActivity.swift` | Paired display/system idle-sleep holds during playback |
+| `PassageChatModel.swift`, `PassageChatView.swift`, `ReaderCore/PassageChat.swift` | Ephemeral selection-scoped chat, cancellation, answer playback, and message types |
 | `CloudNarrator.swift` | Generated audio playback for both OpenRouter and local Kokoro |
 | `LocalKokoro.swift` | Hardware checks, optional download/install, readiness and removal |
 | `LocalKokoroWorker.swift`, `LocalCommand.swift` | Persistent worker protocol and cancellable setup subprocesses |

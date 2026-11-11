@@ -14,6 +14,7 @@ final class SpeechSettings: ObservableObject {
     @Published var timingMode: CloudWordTiming { didSet { UserDefaults.standard.set(timingMode.rawValue, forKey: "cloudTimingMode") } }
     @Published var highlightGranularity: HighlightGranularity { didSet { UserDefaults.standard.set(highlightGranularity.rawValue, forKey: "highlightGranularity") } }
     @Published var localVoice: String { didSet { UserDefaults.standard.set(localVoice, forKey: "localKokoroVoice") } }
+    @Published var chatModel: String { didSet { UserDefaults.standard.set(chatModel, forKey: "passageChatModel") } }
     @Published var keyDraft = ""
     @Published var hasKey = false
     @Published var message: String?
@@ -22,6 +23,7 @@ final class SpeechSettings: ObservableObject {
 
     init() {
         let defaults = UserDefaults.standard
+        chatModel = defaults.string(forKey: "passageChatModel") ?? "z-ai/glm-5.3-flash"
         localVoice = defaults.string(forKey: "localKokoroVoice") ?? "af_heart"
         provider = Provider(rawValue: defaults.string(forKey: "speechProvider") ?? "") ?? .mac
         let selection = Self.savedSelection(defaults: defaults)

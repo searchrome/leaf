@@ -31,13 +31,13 @@ struct LeafApp: App {
                 Button("Library") { reader.showLibrary = true }.keyboardShortcut("l")
             }
             CommandMenu("Reading") {
-                Button(reader.isReading ? "Pause" : "Read aloud", action: reader.toggleReading).keyboardShortcut(" ", modifiers: [])
+                Button(reader.isReading ? "Pause" : "Read aloud", action: reader.toggleReading).keyboardShortcut(" ", modifiers: []).disabled(reader.passageChat != nil)
                 Button(reader.canOpenListeningView ? "Next sentence" : "Next page") { reader.navigateReading(1) }
                     .keyboardShortcut(.rightArrow, modifiers: [])
-                    .disabled(reader.showSettings || reader.showLibrary || reader.isImporting || reader.lookupResult != nil)
+                    .disabled(reader.showSettings || reader.showLibrary || reader.isImporting || reader.lookupResult != nil || reader.passageChat != nil)
                 Button(reader.canOpenListeningView ? "Previous sentence" : "Previous page") { reader.navigateReading(-1) }
                     .keyboardShortcut(.leftArrow, modifiers: [])
-                    .disabled(reader.showSettings || reader.showLibrary || reader.isImporting || reader.lookupResult != nil)
+                    .disabled(reader.showSettings || reader.showLibrary || reader.isImporting || reader.lookupResult != nil || reader.passageChat != nil)
                 Button(reader.isListeningView ? "Exit listening view" : "Open listening view") {
                     reader.toggleListeningView()
                 }
@@ -45,6 +45,7 @@ struct LeafApp: App {
                 .disabled(!reader.isListeningView && !reader.canOpenListeningView)
                 Divider()
                 Button("Bookmark Selected Text", action: reader.bookmarkSelectedText).disabled(!reader.hasTextSelection)
+                Button("Chat About Selected Text", action: reader.chatAboutSelectedText).disabled(!reader.hasTextSelection || reader.passageChat != nil)
                 Button("Look Up Selected Text", action: reader.lookUpSelectedText).disabled(!reader.hasTextSelection)
             }
         }

@@ -50,6 +50,15 @@ struct ReadingSettingsView: View {
                     }
                     Divider()
                     if speech.provider == .local { localSettings } else { cloudSettings }
+                    Divider()
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("PASSAGE CHAT").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+                        TextField("Chat model ID", text: $speech.chatModel)
+                            .textFieldStyle(.roundedBorder)
+                            .accessibilityLabel("Passage chat model ID")
+                        Text("Default: GLM-5.3 Flash. Enter an OpenRouter text model ID to change it. Chat uses your saved OpenRouter key, independently of the voice provider. The selected passage and conversation are sent when you ask a question; usage is billed to your account.")
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
                 }.padding(26)
             }
         }

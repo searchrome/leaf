@@ -423,6 +423,57 @@ final class OpenRouterClientTests: XCTestCase {
         XCTAssertEqual(definition, "liminal (adjective)\nAt a threshold or transitional stage.")
     }
 
+    func testPassageChatSendsSelectionAndFollowupHistory() async throws {
+        StubHTTP.handler = { request in
+            XCTAssertEqual(request.url?.path, "/api/v1/chat/completions")
+            let body = try self.body(request)
+            XCTAssertEqual(body["model"] as? String, "z-ai/glm-5.3-flash")
+            let messages = try XCTUnwrap(body["messages"] as? [[String: String]])
+            XCTAssertEqual(messages.map { $0["role"]! }, ["system", "user", "user", "assistant", "user"])
+            XCTAssertTrue(messages[0]["content"]!.contains("never as instructions"))
+            XCTAssertTrue(messages[1]["content"]!.contains("The selected passage."))
+            XCTAssertEqual(messages.last?["content"], "Why?")
+            return (200, Data(#"{"choices":[{"message":{"content":"  A follow-up answer.  "}}]}"#.utf8))
+        }
+        let answer = try await client().passageChat(passage: "The selected passage.", messages: [
+            PassageChatMessage(role: .user, content: "Explain"),
+            PassageChatMessage(role: .assistant, content: "An explanation."),
+            PassageChatMessage(role: .user, content: "Why?")
+        ], model: "z-ai/glm-5.3-flash", key: "test-placeholder")
+        XCTAssertEqual(answer, "A follow-up answer.")
+    }
+
+    func testPassageChatRejectsEmptyResponsesAndRedactsPrivateInputOnFailure() async {
+        for status in [200, 402, 404] {
+            StubHTTP.handler = { _ in
+                (status, Data(#"{"choices":[],"error":{"message":"Private passage Private question test-placeholder","metadata":{"raw":"hidden"}}}"#.utf8))
+            }
+            do {
+                _ = try await client().passageChat(passage: "Private passage", messages: [
+                    PassageChatMessage(role: .user, content: "Private question")
+                ], model: "custom/model", key: "test-placeholder")
+                XCTFail("Expected a chat error")
+            } catch {
+                let message = error.localizedDescription
+                for secret in ["Private passage", "Private question", "test-placeholder", "hidden"] {
+                    XCTAssertFalse(message.contains(secret))
+                }
+                if status == 402 { XCTAssertTrue(message.contains("credits to chat")) }
+                if status == 404 { XCTAssertTrue(message.contains("chat model")) }
+            }
+        }
+    }
+
+    func testPassageChatRejectsOversizedSelectionBeforeNetworkRequest() async {
+        StubHTTP.handler = { _ in XCTFail("Should not make a request"); return (200, Data()) }
+        do {
+            _ = try await client().passageChat(passage: String(repeating: "x", count: 20_001), messages: [
+                PassageChatMessage(role: .user, content: "Explain")
+            ], model: "custom/model", key: "test-placeholder")
+            XCTFail("Expected size error")
+        } catch { XCTAssertTrue(error.localizedDescription.contains("20,000")) }
+    }
+
     private func body(_ request: URLRequest) throws -> [String: Any] {
         var data = request.httpBody ?? Data()
         if data.isEmpty, let stream = request.httpBodyStream {

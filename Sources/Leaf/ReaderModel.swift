@@ -28,6 +28,7 @@ final class ReaderModel: NSObject, ObservableObject, AVSpeechSynthesizerDelegate
     @Published private(set) var bookmarks: [TextBookmark] = []
     @Published private(set) var selectedText = ""
     @Published private(set) var selectedBookmark: TextBookmark?
+    @Published var passageChat: PassageChatModel?
     @Published var lookupResult: DictionaryLookupResult?
     @Published private(set) var isLookingUp = false
     let speechSettings = SpeechSettings()
@@ -368,6 +369,17 @@ final class ReaderModel: NSObject, ObservableObject, AVSpeechSynthesizerDelegate
         selectedRange = bookmark.range
         selectedText = bookmark.quote
         savePosition()
+    }
+
+    func chatAboutSelectedText() {
+        guard hasTextSelection else { error = "Select a passage before opening chat."; return }
+        guard selectedText.utf16.count <= 20_000 else {
+            error = "Select a shorter passage (up to 20,000 characters) to chat about."
+            return
+        }
+        stop()
+        passageChat?.close()
+        passageChat = PassageChatModel(passage: selectedText, settings: speechSettings, voiceID: voiceID, rate: rate)
     }
 
     func lookUpSelectedText() {

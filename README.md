@@ -30,7 +30,7 @@ The package script creates a signed `.app` with its icon and local-voice resourc
 - **Library** or Command-L reopens previous books. Files remain in their original locations.
 - Space starts, pauses, or resumes narration. Left/Right moves by sentence during narration and by page when idle. The page buttons always navigate pages.
 - Click a word or sentence to narrate from there. F5 toggles the fullscreen listening view.
-- Select text to bookmark it or use **Look Up**. Bookmarks are stored per book.
+- Select text to bookmark it, use **Look Up**, or open **Ask AI**. Bookmarks are stored per book.
 - **Reading settings** controls text size, provider, voice, narration pace, and highlighting.
 
 Leaf saves the current book, chapter, and UTF-16 text position. It checkpoints narration every two seconds and saves immediately on pause or normal quit. After relaunch, Read aloud starts at the saved sentence; window resizing preserves the text position. Narration and voice previews prevent automatic display/system sleep until paused, stopped, or finished.
@@ -48,6 +48,16 @@ Leaf saves the current book, chapter, and UTF-16 text position. It checkpoints n
 **OpenRouter:** Keys are stored in macOS Keychain, never in project files or UserDefaults. Saving a key selects OpenRouter. Model availability and supported voices depend on the service; use **Refresh models** or enter a model ID manually. Speech generation uses account credits. **Audio timestamps** makes an additional paid transcription request; when timing fails or differs from the source, playback uses clearly labeled estimates. Estimated word/sentence timing may drift. Preview uses fixed sample text rather than book text. Leaf never silently switches speech providers.
 
 **Dictionary lookup:** macOS Dictionary is tried first. If no definition is available, the optional online fallback sends the selected passage and nearby context through OpenRouter. This is separate from the selected speech provider and requires a saved key.
+
+## Chat about a passage
+
+Select book text and choose **Ask AI**, **Chat About Selected Text** from the context menu, or the Reading menu. An iMessage-style popup shows the selected passage as the first bubble, followed by your questions on the right and AI replies on the left. The conversation automatically scrolls to the latest message; the question box and prompt tags stay at the bottom. It uses your saved OpenRouter key; **Reading settings → Passage chat → Chat model ID** changes the model independently of your narration provider. The default is GLM-5.3 Flash (`z-ai/glm-5.3-flash`).
+
+Click **Summarize**, **Simplify**, **Key points**, or **Give an example** above the question box to send a prepared question immediately. Hover over a tag to see its full question. Tags are disabled while a reply is being prepared.
+
+**Listen** on an answer reads it using your selected Mac, local Kokoro, or OpenRouter voice and pace. **Stop listening** stops answer playback. Opening chat stops book narration. Closing the popup cancels the request, stops audio, and clears the conversation. Failed or cancelled questions remain in the input so you can retry. Chat is not saved across popup sessions.
+
+Chat sends the selected passage and conversation to OpenRouter and its providers when you ask; it does not send the rest of the book. Usage is billed to your account. Cloud answer narration also sends the reply text for speech generation. AI answers may be inaccurate. Selections are limited to 20,000 UTF-16 text units, questions to 8,000, and conversations to 20 completed questions; start a new chat when the limit is reached.
 
 ## Tests and local runtime qualification
 
